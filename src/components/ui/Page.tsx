@@ -37,11 +37,11 @@ export function PageHeader({
       )}
     >
       <div className="min-w-0">
-        <h1 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-[#F3F4F6] sm:text-3xl">
           {title}
         </h1>
         {description ? (
-          <p className="mt-1.5 text-sm text-slate-500 sm:text-[0.9375rem]">
+          <p className="mt-1.5 text-sm text-slate-500 dark:text-[#94A3B8] sm:text-[0.9375rem]">
             {description}
           </p>
         ) : null}
@@ -75,12 +75,12 @@ export function EmptyState({
         className,
       )}
     >
-      <div className="grid size-12 place-items-center rounded-xl bg-slate-100">
-        <Icon className="size-6 text-slate-400" aria-hidden="true" />
+      <div className="grid size-12 place-items-center rounded-xl bg-slate-100 dark:bg-[#1F2A40]">
+        <Icon className="size-6 text-slate-400 dark:text-[#94A3B8]" aria-hidden="true" />
       </div>
-      <h3 className="mt-4 text-base font-semibold text-slate-900">{title}</h3>
+      <h3 className="mt-4 text-base font-semibold text-slate-900 dark:text-[#F3F4F6]">{title}</h3>
       {description ? (
-        <p className="mt-1.5 max-w-sm text-sm text-slate-500">{description}</p>
+        <p className="mt-1.5 max-w-sm text-sm text-slate-500 dark:text-[#94A3B8]">{description}</p>
       ) : null}
       {action ? <div className="mt-6">{action}</div> : null}
     </div>
@@ -110,7 +110,7 @@ export function Th({
     <th
       scope="col"
       className={cn(
-        "whitespace-nowrap px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500",
+        "whitespace-nowrap px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-[#94A3B8]",
         className,
       )}
       {...props}
@@ -122,5 +122,13 @@ export function Td({
   className,
   ...props
 }: React.ComponentPropsWithoutRef<"td">) {
-  return <td className={cn("px-6 py-4 align-middle", className)} {...props} />;
+  return (
+    <td
+      className={cn(
+        "px-6 py-4 align-middle text-slate-700 dark:text-[#E2E8F0]",
+        className,
+      )}
+      {...props}
+    />
+  );
 }

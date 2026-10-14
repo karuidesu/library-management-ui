@@ -53,7 +53,7 @@ export function Modal({
       <div
         aria-hidden="true"
         onClick={onClose}
-        className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200"
+        className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200 dark:bg-black/80 dark:backdrop-blur-md"
       />
 
       <div
@@ -65,21 +65,22 @@ export function Modal({
         tabIndex={-1}
         className={cn(
           "relative flex max-h-[92dvh] w-full flex-col overflow-hidden bg-white",
-          "rounded-t-3xl shadow-overlay outline-none sm:rounded-2xl",
+          "dark:bg-[#171E31] dark:border dark:border-[#2D3B55]",
+          "rounded-t-3xl shadow-overlay outline-none sm:rounded-2xl dark:shadow-[0_25px_60px_rgba(0,0,0,0.85)]",
           "animate-in duration-200 slide-in-from-bottom-4 sm:zoom-in-95 sm:slide-in-from-bottom-0",
           widths[size],
         )}
       >
-        <div className="flex items-start justify-between gap-6 border-b border-slate-100 px-6 py-5 sm:px-8">
+        <div className="flex items-start justify-between gap-6 border-b border-slate-100 px-6 py-5 sm:px-8 dark:border-[#212B44]">
           <div className="min-w-0">
             <h2
               id={titleId}
-              className="text-lg font-semibold tracking-tight text-slate-900 sm:text-xl"
+              className="text-lg font-semibold tracking-tight text-slate-900 dark:text-[#F3F4F6] sm:text-xl"
             >
               {title}
             </h2>
             {description ? (
-              <p id={descriptionId} className="mt-1 text-sm text-slate-500">
+              <p id={descriptionId} className="mt-1 text-sm text-slate-500 dark:text-[#94A3B8]">
                 {description}
               </p>
             ) : null}
@@ -100,7 +101,7 @@ export function Modal({
         </div>
 
         {footer ? (
-          <div className="flex flex-col-reverse gap-3 border-t border-slate-100 bg-slate-50/50 px-6 py-4 sm:flex-row sm:items-center sm:justify-end sm:px-8">
+          <div className="flex flex-col-reverse gap-3 border-t border-slate-100 bg-slate-50/50 px-6 py-4 sm:flex-row sm:items-center sm:justify-end sm:px-8 dark:border-[#212B44] dark:bg-[#131929]">
             {footer}
           </div>
         ) : null}

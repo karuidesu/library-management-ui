@@ -49,13 +49,15 @@ export function Pagination({
       "grid size-10 place-items-center rounded-lg text-sm font-semibold transition-colors",
       "outline-none focus-visible:ring-4 focus-visible:ring-brand-600/20",
       active
-        ? "bg-brand-600 text-white shadow-sm shadow-brand-600/25"
-        : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900",
+        ? "bg-brand-600 text-white shadow-sm shadow-brand-600/25 dark:bg-blue-600 dark:shadow-blue-900/40"
+        : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900 " +
+          "dark:border-[#212B44] dark:bg-[#171E31] dark:text-[#94A3B8] dark:hover:bg-[#2E3E5A] dark:hover:text-white",
     );
 
   const arrowClass =
     "grid size-10 place-items-center rounded-lg border border-slate-200 bg-white " +
-    "text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-900 " +
+    "dark:border-[#212B44] dark:bg-[#171E31] text-slate-500 dark:text-[#94A3B8] " +
+    "transition-colors hover:bg-slate-50 hover:text-slate-900 dark:hover:bg-[#2E3E5A] dark:hover:text-white " +
     "disabled:pointer-events-none disabled:opacity-40 outline-none " +
     "focus-visible:ring-4 focus-visible:ring-brand-600/20";
 
@@ -67,7 +69,7 @@ export function Pagination({
       )}
     >
       {summary ? (
-        <p className="text-sm text-slate-500">{summary}</p>
+        <p className="text-sm text-slate-500 dark:text-[#94A3B8]">{summary}</p>
       ) : (
         <span />
       )}

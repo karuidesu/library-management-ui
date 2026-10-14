@@ -54,8 +54,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     [collapsed, toggleCollapsed, drawerOpen, openDrawer, closeDrawer],
   );
 
+  if (pathname === "/login") {
+    return (
+      <main id="main-content" className="min-h-dvh">
+        {children}
+      </main>
+    );
+  }
+
   return (
     <ShellContext.Provider value={value}>
+
       <a
         href="#main-content"
         className="sr-only-focusable focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[60] focus:h-auto focus:w-auto focus:rounded-lg focus:bg-brand-600 focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-white focus:[clip-path:none]"
