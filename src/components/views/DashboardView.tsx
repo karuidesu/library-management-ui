@@ -1,0 +1,179 @@
+"use client";
+
+import * as React from "react";
+import Link from "next/link";
+import {
+  AlertTriangle,
+  ArrowDownRight,
+  ArrowRight,
+  ArrowUpRight,
+  BookOpen,
+  Clock,
+  Users,
+  type LucideIcon,
+} from "lucide-react";
+import { cn } from "@/lib/cn";
+import { activityTone, Badge } from "@/components/ui/Badge";
+import { Avatar } from "@/components/ui/Avatar";
+import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
+import {
+  PageContainer,
+  PageHeader,
+  TableScroll,
+  Td,
+  Th,
+} from "@/components/ui/Page";
+import { currentUser, dashboardActivities, kpis } from "@/lib/data";
+
+const kpiVisuals: Record<string, { icon: LucideIcon; className: string }> = {
+  "total-books": { icon: BookOpen, className: "bg-brand-50 text-brand-600" },
+  "active-members": { icon: Users, className: "bg-indigo-50 text-indigo-600" },
+  "books-borrowed": { icon: Clock, className: "bg-emerald-50 text-emerald-600" },
+  "overdue-returns": {
+    icon: AlertTriangle,
+    className: "bg-rose-50 text-rose-600",
+  },
+};
+
+function KpiCard({
+  id,
+  label,
+  value,
+  trend,
+  higherIsBetter,
+}: (typeof kpis)[number]) {
+  const visual = kpiVisuals[id];
+  const Icon = visual.icon;
+  const rising = trend >= 0;
+  const good = rising === higherIsBetter;
+  const TrendIcon = rising ? ArrowUpRight : ArrowDownRight;
+
+  return (
+    <Card interactive className="p-6">
+      <div className="flex items-start justify-between gap-4">
+        <span
+          className={cn("grid size-12 shrink-0 place-items-center rounded-xl", visual.className)}
+        >
+          <Icon className="size-6" aria-hidden="true" />
+        </span>
+        <Badge tone={good ? "success" : "danger"} className="shrink-0 gap-1">
+          <TrendIcon className="size-3 shrink-0" aria-hidden="true" />
+          {rising ? "+" : ""}
+          {trend}%
+        </Badge>
+      </div>
+
+      <h3 className="mt-5 text-sm font-medium text-slate-500">{label}</h3>
+      <p className="mt-1 text-3xl font-semibold tracking-tight text-slate-900 tabular-nums">
+        {value.toLocaleString("fr-FR")}
+      </p>
+      <p className="mt-2 text-xs text-slate-400">par rapport aux 30 derniers jours</p>
+    </Card>
+  );
+}
+
+export function DashboardView() {
+  return (
+    <PageContainer>
+      <PageHeader
+        title="Aperçu"
+        description={`Bon retour, ${currentUser.name.split(" ")[0]}. Voici ce qui se passe dans votre bibliothèque aujourd'hui.`}
+      />
+
+      <div className="mb-6 grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-6 xl:grid-cols-4">
+        {kpis.map((kpi) => (
+          <KpiCard key={kpi.id} {...kpi} />
+        ))}
+      </div>
+
+      <Card>
+        <CardHeader>
+          <div className="min-w-0">
+            <CardTitle>Activités récentes</CardTitle>
+            <p className="mt-1 text-sm text-slate-500">
+              Les derniers emprunts, retours et inscriptions.
+            </p>
+          </div>
+          <Link
+            href="/borrow"
+            className="-my-1.5 flex shrink-0 items-center gap-1.5 rounded-lg px-1 py-1.5 text-sm font-semibold text-brand-600 outline-none transition-colors hover:text-brand-700 focus-visible:ring-4 focus-visible:ring-brand-600/20"
+          >
+            Tout voir
+            <ArrowRight className="size-4" aria-hidden="true" />
+          </Link>
+        </CardHeader>
+
+        <TableScroll className="hidden md:block">
+          <table className="w-full min-w-[46rem] border-collapse text-left">
+            <thead className="bg-slate-50/60">
+              <tr>
+                <Th className="px-6 lg:px-8">Membre</Th>
+                <Th>Action</Th>
+                <Th>Livre</Th>
+                <Th>Date</Th>
+                <Th className="px-6 text-right lg:px-8">Statut</Th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {dashboardActivities.map((activity) => (
+                <tr
+                  key={activity.id}
+                  className="transition-colors hover:bg-slate-50/60"
+                >
+                  <Td className="px-6 lg:px-8">
+                    <div className="flex items-center gap-3.5">
+                      <Avatar name={activity.member} size="md" />
+                      <span className="truncate font-semibold text-slate-900">
+                        {activity.member}
+                      </span>
+                    </div>
+                  </Td>
+                  <Td className="text-slate-600">{activity.action}</Td>
+                  <Td className="max-w-[16rem]">
+                    <span className="block truncate font-medium text-slate-900">
+                      {activity.bookTitle}
+                    </span>
+                  </Td>
+                  <Td className="whitespace-nowrap text-sm text-slate-500">
+                    {activity.time}
+                  </Td>
+                  <Td className="px-6 text-right lg:px-8">
+                    <Badge tone={activityTone[activity.status]} dot>
+                      {activity.status}
+                    </Badge>
+                  </Td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </TableScroll>
+
+        <ul className="divide-y divide-slate-100 md:hidden">
+          {dashboardActivities.map((activity) => (
+            <li key={activity.id} className="flex items-start gap-3.5 p-5">
+              <Avatar name={activity.member} size="md" />
+              <div className="min-w-0 flex-1">
+                <div className="flex items-start justify-between gap-3">
+                  <p className="truncate font-semibold text-slate-900">
+                    {activity.member}
+                  </p>
+                  <Badge
+                    tone={activityTone[activity.status]}
+                    className="shrink-0"
+                    dot
+                  >
+                    {activity.status}
+                  </Badge>
+                </div>
+                <p className="mt-0.5 truncate text-sm text-slate-600">
+                  {activity.action} &middot; {activity.bookTitle}
+                </p>
+                <p className="mt-1 text-xs text-slate-400">{activity.time}</p>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </Card>
+    </PageContainer>
+  );
+}
