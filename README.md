@@ -1,36 +1,86 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Agbale — Library Management System
 
-## Getting Started
+A Next.js 16 library management UI: catalog, members, lending, analytics and
+settings, built with the App Router, Tailwind CSS v4, Recharts and lucide icons.
 
-First, run the development server:
+## Getting started
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev          # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Other scripts:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Script | What it does |
+|---|---|
+| `npm run build` | Production build. Works offline; no fonts are fetched at build time. |
+| `npm run typecheck` | `tsc --noEmit` |
+| `npm run lint` | ESLint |
+| `npm run fonts:sync` | Re-copies the Inter subsets from `@fontsource-variable/inter` into `public/fonts`. Run after bumping that package. |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Structure
 
-## Learn More
+```
+src/
+  app/
+    layout.tsx            Root layout, metadata, font preload
+    page.tsx              Redirects to /login
+    globals.css           Design tokens (@theme), base layer, utilities
+    (auth)/login/         Sign-in, rendered outside the app shell
+    (app)/                Signed-in routes, all sharing AppShell
+      layout.tsx
+      dashboard|catalog|members|borrow|analytics|settings/
+  components/
+    layout/               AppShell, Sidebar, Header
+    ui/                   Button, Card, Badge, Field, Modal, DropdownMenu,
+                          Combobox, Pagination, Avatar, Page primitives
+    views/                One component per route
+  hooks/                  Focus trap, scroll lock, escape key, client state
+  lib/
+    data.ts               Single source of mock data for every view
+    nav.ts                The one list of routes
+    cn.ts                 Tailwind-aware class merge
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Conventions worth knowing
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+**Routes live in `lib/nav.ts`.** The sidebar, the breadcrumbs and the page
+titles all read from that array. Adding a section means editing one file.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+**Data lives in `lib/data.ts`.** No view carries its own inline mock array, and
+the headline figures are reconciled: `bookStatusData` sums to
+`libraryStats.totalBooks`, and its "Borrowed" slice equals the Books Borrowed
+KPI. Replacing the exports in that file is how you swap in a real API.
 
-## Deploy on Vercel
+**Loan dates are relative to `REFERENCE_DATE`, not `new Date()`.** That keeps
+the Borrow view showing a realistic mix of overdue, due-today and upcoming
+loans, and keeps the server render and the client hydration identical.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+**The document scrolls, not a nested element.** The shell is a sticky sidebar
+and sticky header over normal document flow. Do not add `h-screen` plus
+`overflow-y-auto` inside a view; that is what produced double scrollbars
+before.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+**`min-w-0` on flex children that contain text.** Without it a flex child will
+not shrink below its content width, which is the usual cause of text running
+out of bounds and a horizontally scrolling page.
+
+**Wide tables go in `<TableScroll>`.** It is `position: relative` on purpose:
+Tailwind's `sr-only` is absolutely positioned, and without a positioned
+containing block an `sr-only` label inside a wide table escapes the scroll
+container and gives the whole page a horizontal scrollbar.
+
+**Tables below `md` render as card lists**, not as a sideways scroll. Each view
+with a table ships both.
+
+**Theming.** Brand colour is the `--color-brand-*` ramp in `globals.css`;
+change it there rather than touching `blue-600` across components. Elevation
+is `shadow-card`, `shadow-card-hover`, `shadow-popover` and `shadow-overlay`.
+
+## Accessibility
+
+Dialogs and the mobile drawer trap focus, close on Escape, lock body scroll and
+return focus to their trigger. The combobox follows the ARIA combobox pattern.
+Icon-only controls carry labels, tap targets clear 24px, and charts ship a
+legend plus a visually hidden data table.
