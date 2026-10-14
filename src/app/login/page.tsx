@@ -6,6 +6,7 @@ export const metadata: Metadata = {
   description: "Connectez-vous à votre espace Agbale.",
 };
 
+
 export default function LoginPage() {
   return <LoginView />;
 }
