@@ -17,7 +17,7 @@ export interface NavItem {
   icon: LucideIcon;
 }
 
-export const navItems: NavItem[] = [
+export const mainNavItems: NavItem[] = [
   {
     href: "/dashboard",
     label: "Tableau de bord",
@@ -26,7 +26,7 @@ export const navItems: NavItem[] = [
   },
   {
     href: "/catalog",
-    label: "Catalogue",
+    label: "Livres",
     title: "Catalogue de livres",
     icon: BookOpen,
   },
@@ -48,16 +48,20 @@ export const navItems: NavItem[] = [
     title: "Analyses & Statistiques",
     icon: BarChart3,
   },
-  {
-    href: "/settings",
-    label: "Paramètres",
-    title: "Paramètres",
-    icon: Settings,
-  },
 ];
+
+export const settingsNavItem: NavItem = {
+  href: "/settings",
+  label: "Paramètres",
+  title: "Paramètres",
+  icon: Settings,
+};
+
+export const navItems: NavItem[] = [...mainNavItems, settingsNavItem];
 
 export function navItemFor(pathname: string): NavItem | undefined {
   return navItems.find(
     (item) => pathname === item.href || pathname.startsWith(`${item.href}/`),
   );
 }
+

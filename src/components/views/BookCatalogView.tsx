@@ -34,6 +34,7 @@ import {
 import {
   bookConditions,
   categories,
+  categoryEmojis,
   initialBooks,
   libraryStats,
   type Book,
@@ -72,7 +73,7 @@ function AddBookModal({
       }
     >
       <form className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-        <Field label="Titre du livre" htmlFor="book-title" className="sm:col-span-2">
+        <Field label="Titre du livre" htmlFor="book-title" className="sm:col-span-2" required>
           <Input
             id="book-title"
             data-autofocus
@@ -80,7 +81,7 @@ function AddBookModal({
           />
         </Field>
 
-        <Field label="Auteur" htmlFor="book-author">
+        <Field label="Auteur" htmlFor="book-author" required>
           <Input id="book-author" placeholder="ex. Alain-Fournier" />
         </Field>
 
@@ -88,6 +89,7 @@ function AddBookModal({
           label="ISBN"
           htmlFor="book-isbn"
           hint="13 chiffres, tirets facultatifs."
+          required
         >
           <Input
             id="book-isbn"
@@ -97,27 +99,31 @@ function AddBookModal({
           />
         </Field>
 
-        <Field label="Catégorie" htmlFor="book-category">
+        <Field label="Catégorie" htmlFor="book-category" required>
           <Select id="book-category" defaultValue="Fiction">
             {categories.map((category) => (
-              <option key={category}>{category}</option>
+              <option key={category} value={category}>
+                {categoryEmojis[category] ? `${categoryEmojis[category]} ` : ""}{category}
+              </option>
             ))}
           </Select>
         </Field>
 
-        <Field label="État" htmlFor="book-condition">
+        <Field label="État" htmlFor="book-condition" required>
           <Select id="book-condition" defaultValue="Neuf">
             {bookConditions.map((condition) => (
-              <option key={condition}>{condition}</option>
+              <option key={condition} value={condition}>
+                {condition}
+              </option>
             ))}
           </Select>
         </Field>
 
-        <Field label="Année de publication" htmlFor="book-year">
+        <Field label="Année de publication" htmlFor="book-year" optional>
           <Input id="book-year" inputMode="numeric" placeholder="2024" />
         </Field>
 
-        <Field label="Exemplaires" htmlFor="book-copies">
+        <Field label="Nombre d'exemplaires" htmlFor="book-copies" optional>
           <Input id="book-copies" inputMode="numeric" defaultValue="1" />
         </Field>
       </form>
@@ -249,7 +255,7 @@ export function BookCatalogView() {
             }}
             placeholder="Rechercher par titre, auteur ou ISBN..."
             aria-label="Rechercher dans le catalogue"
-            className="bg-slate-50 focus:bg-white"
+            className="bg-slate-50 dark:bg-[#111827] focus:bg-white dark:focus:bg-[#111827]"
           />
 
           <Select
@@ -297,16 +303,13 @@ export function BookCatalogView() {
         </div>
 
         {selected.size > 0 ? (
-          <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-brand-50 px-4 py-2.5">
-            <p className="text-sm font-medium text-brand-800">
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-brand-50 dark:bg-blue-950/45 dark:border dark:border-blue-900/50 px-4 py-2.5">
+            <p className="text-sm font-medium text-brand-800 dark:text-blue-300">
               {selected.size} {selected.size === 1 ? "livre sélectionné" : "livres sélectionnés"}
             </p>
             <div className="flex items-center gap-2">
-              <Button variant="secondary" size="sm">
-                Exporter
-              </Button>
               <Button variant="ghost" size="sm" onClick={() => setSelected(new Set())}>
-                Effacer
+                Désélectionner tout
               </Button>
             </div>
           </div>
@@ -329,7 +332,7 @@ export function BookCatalogView() {
           <>
             <TableScroll className="hidden md:block">
               <table className="w-full min-w-[56rem] border-collapse text-left">
-                <thead className="bg-slate-50/60">
+                <thead className="bg-slate-50/60 dark:bg-[#131929]/80">
                   <tr>
                     <Th className="w-12 pl-6 pr-0 lg:pl-8">
                       <label className="-m-3 inline-flex cursor-pointer p-3">
@@ -350,12 +353,12 @@ export function BookCatalogView() {
                     </Th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-slate-100 dark:divide-[#212B44]">
                   {visible.map((book) => (
                     <tr
                       key={book.id}
                       data-selected={selected.has(book.id)}
-                      className="transition-colors hover:bg-slate-50/60 data-[selected=true]:bg-brand-50/40"
+                      className="transition-colors hover:bg-slate-50/60 dark:hover:bg-[#1F2A40]/50 data-[selected=true]:bg-brand-50/40 dark:data-[selected=true]:bg-blue-950/40"
                     >
                       <Td className="pl-6 pr-0 lg:pl-8">
                         <label className="-m-3 inline-flex cursor-pointer p-3">
@@ -374,20 +377,23 @@ export function BookCatalogView() {
                             emoji={book.coverEmoji}
                           />
                           <div className="min-w-0 max-w-[20rem]">
-                            <p className="truncate font-semibold text-slate-900">
+                            <p className="truncate font-semibold text-slate-900 dark:text-[#F3F4F6]">
                               {book.title}
                             </p>
-                            <p className="truncate text-sm text-slate-500">
+                            <p className="truncate text-sm text-slate-500 dark:text-[#94A3B8]">
                               {book.author}
                             </p>
                           </div>
                         </div>
                       </Td>
-                      <Td className="whitespace-nowrap font-mono text-sm text-slate-600">
+                      <Td className="whitespace-nowrap font-mono text-sm text-slate-600 dark:text-[#94A3B8]">
                         {book.isbn}
                       </Td>
                       <Td>
-                        <Badge>{book.category}</Badge>
+                        <Badge tone="neutral" className="gap-1.5 font-medium">
+                          <span aria-hidden="true">{categoryEmojis[book.category] ?? "📖"}</span>
+                          <span>{book.category}</span>
+                        </Badge>
                       </Td>
                       <Td>
                         <Badge tone={bookStatusTone[book.status]} dot>
@@ -403,7 +409,7 @@ export function BookCatalogView() {
               </table>
             </TableScroll>
 
-            <ul className="divide-y divide-slate-100 md:hidden">
+            <ul className="divide-y divide-slate-100 dark:divide-[#212B44] md:hidden">
               {visible.map((book) => (
                 <li key={book.id} className="flex items-start gap-4 p-5">
                   <BookCover
@@ -412,18 +418,21 @@ export function BookCatalogView() {
                     emoji={book.coverEmoji}
                   />
                   <div className="min-w-0 flex-1">
-                    <p className="font-semibold text-slate-900">{book.title}</p>
-                    <p className="mt-0.5 truncate text-sm text-slate-500">
+                    <p className="font-semibold text-slate-900 dark:text-[#F3F4F6]">{book.title}</p>
+                    <p className="mt-0.5 truncate text-sm text-slate-500 dark:text-[#94A3B8]">
                       {book.author}
                     </p>
-                    <p className="mt-1 font-mono text-xs text-slate-400">
+                    <p className="mt-1 font-mono text-xs text-slate-400 dark:text-[#64748B]">
                       {book.isbn}
                     </p>
                     <div className="mt-2.5 flex flex-wrap items-center gap-2">
                       <Badge tone={bookStatusTone[book.status]} dot>
                         {book.status}
                       </Badge>
-                      <Badge>{book.category}</Badge>
+                      <Badge tone="neutral" className="gap-1.5 font-medium">
+                        <span aria-hidden="true">{categoryEmojis[book.category] ?? "📖"}</span>
+                        <span>{book.category}</span>
+                      </Badge>
                     </div>
                   </div>
                   <RowActions title={book.title} />
@@ -440,15 +449,15 @@ export function BookCatalogView() {
                 summary={
                   <>
                     Affichage de{" "}
-                    <span className="font-medium text-slate-700">
+                    <span className="font-medium text-slate-700 dark:text-[#F3F4F6]">
                       {rangeStart}
                     </span>{" "}
                     à{" "}
-                    <span className="font-medium text-slate-700">
+                    <span className="font-medium text-slate-700 dark:text-[#F3F4F6]">
                       {rangeEnd}
                     </span>{" "}
                     sur{" "}
-                    <span className="font-medium text-slate-700">
+                    <span className="font-medium text-slate-700 dark:text-[#F3F4F6]">
                       {filtered.length.toLocaleString("fr-FR")}
                     </span>{" "}
                     entrées

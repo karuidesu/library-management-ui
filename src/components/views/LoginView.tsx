@@ -164,21 +164,21 @@ export function LoginView() {
         />
       </section>
 
-      <section className="flex flex-1 items-center justify-center px-5 py-12 sm:px-8 lg:py-16">
+      <section className="flex flex-1 items-center justify-center px-5 py-12 sm:px-8 lg:py-16 bg-white dark:bg-[#0B0F19]">
         <div className="w-full max-w-md animate-in fade-in slide-in-from-bottom-4 duration-500">
           <div className="mb-10 flex items-center gap-3 lg:hidden">
             <span className="grid size-11 place-items-center rounded-xl bg-brand-600">
               <Library className="size-6 text-white" aria-hidden="true" />
             </span>
-            <span className="text-xl font-semibold tracking-tight text-slate-900">
+            <span className="text-xl font-semibold tracking-tight text-slate-900 dark:text-[#F3F4F6]">
               {APP_NAME}
             </span>
           </div>
 
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-[#F3F4F6] sm:text-3xl">
             Bon retour
           </h1>
-          <p className="mt-2 text-slate-500">
+          <p className="mt-2 text-slate-500 dark:text-[#94A3B8]">
             Connectez-vous à votre espace de bibliothèque pour continuer.
           </p>
 
@@ -202,7 +202,7 @@ export function LoginView() {
               action={
                 <Link
                   href="/login"
-                  className="-my-1.5 rounded px-0.5 py-1.5 text-sm font-medium text-brand-600 outline-none transition-colors hover:text-brand-700 focus-visible:ring-4 focus-visible:ring-brand-600/20"
+                  className="-my-1.5 rounded px-0.5 py-1.5 text-sm font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300 outline-none transition-colors focus-visible:ring-4 focus-visible:ring-brand-600/20"
                 >
                   Mot de passe oublié ?
                 </Link>
@@ -225,7 +225,7 @@ export function LoginView() {
                       showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"
                     }
                     aria-pressed={showPassword}
-                    className="grid size-9 place-items-center rounded-lg text-slate-400 outline-none transition-colors hover:bg-slate-100 hover:text-slate-600 focus-visible:ring-4 focus-visible:ring-brand-600/20"
+                    className="grid size-9 place-items-center rounded-lg text-slate-400 outline-none transition-colors hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-[#2E3E5A] dark:hover:text-[#F3F4F6] focus-visible:ring-4 focus-visible:ring-brand-600/20"
                   >
                     {showPassword ? (
                       <EyeOff className="size-[1.125rem]" aria-hidden="true" />
@@ -239,7 +239,7 @@ export function LoginView() {
 
             <label className="flex w-fit cursor-pointer items-center gap-2.5 py-1">
               <Checkbox name="remember" defaultChecked />
-              <span className="text-sm text-slate-600">Se souvenir de moi</span>
+              <span className="text-sm text-slate-600 dark:text-[#94A3B8]">Se souvenir de moi</span>
             </label>
 
             <Button
@@ -255,11 +255,11 @@ export function LoginView() {
             </Button>
           </form>
 
-          <p className="mt-8 text-center text-sm text-slate-500">
+          <p className="mt-8 text-center text-sm text-slate-500 dark:text-[#94A3B8]">
             Vous n&apos;avez pas de compte ?{" "}
             <Link
               href="/login"
-              className="rounded font-semibold text-brand-600 outline-none transition-colors hover:text-brand-700 focus-visible:ring-4 focus-visible:ring-brand-600/20"
+              className="rounded font-semibold text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300 outline-none transition-colors focus-visible:ring-4 focus-visible:ring-brand-600/20"
             >
               Contactez votre administrateur
             </Link>
