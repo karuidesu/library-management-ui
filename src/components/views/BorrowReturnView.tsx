@@ -10,6 +10,7 @@ import {
   Search,
   User,
 } from "lucide-react";
+
 import { cn } from "@/lib/cn";
 import { Avatar, BookCover } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
@@ -18,6 +19,7 @@ import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Combobox, type ComboboxOption } from "@/components/ui/Combobox";
 import { Field, Input, Select } from "@/components/ui/Field";
 import { EmptyState, PageContainer, PageHeader } from "@/components/ui/Page";
+import { useLibrarySettings } from "@/hooks/useLibrarySettings";
 import {
   activeLoans as seedLoans,
   daysUntilDue,
@@ -28,6 +30,7 @@ import {
   loanDurations,
   REFERENCE_DATE,
   type ActiveLoan,
+  type Member,
 } from "@/lib/data";
 
 function addDays(iso: string, days: number) {
@@ -36,38 +39,16 @@ function addDays(iso: string, days: number) {
   return date.toISOString().slice(0, 10);
 }
 
-const memberOptions: ComboboxOption[] = initialMembers.map((member) => ({
-  id: member.id,
-  label: member.name,
-  meta: `${member.email} · ${member.borrowedCount} en prêt`,
-  keywords: member.id,
-  disabled: member.status === "Inactif",
-  adornment: (
-    <Avatar name={member.name} initials={member.avatar} size="sm" />
-  ),
-}));
-
-const bookOptions: ComboboxOption[] = initialBooks.map((book) => ({
-  id: book.id,
-  label: book.title,
-  meta: `${book.author} · ${book.isbn}`,
-  keywords: `${book.isbn} ${book.id} ${book.category}`,
-  disabled: book.status !== "Disponible",
-  adornment: (
-    <BookCover
-      title={book.title}
-      gradient={book.coverColor}
-      emoji={book.coverEmoji}
-      className="h-9 w-6 text-xs"
-    />
-  ),
-}));
-
 function RegisterLoanPanel({
+  loans,
   onRegister,
+  members,
 }: {
+  loans: ActiveLoan[];
   onRegister: (loan: ActiveLoan) => void;
+  members: Member[];
 }) {
+  const { maxBooks } = useLibrarySettings();
   const [member, setMember] = React.useState<ComboboxOption | null>(null);
   const [book, setBook] = React.useState<ComboboxOption | null>(null);
   const [duration, setDuration] = React.useState("14");
@@ -81,6 +62,71 @@ function RegisterLoanPanel({
     setDueDate(addDays(REFERENCE_DATE, Number(value)));
   };
 
+  const memberOptions: ComboboxOption[] = React.useMemo(() => {
+    return members.map((m) => {
+      const isQuotaReached = m.borrowedCount >= maxBooks;
+      return {
+        id: m.id,
+        label: m.name,
+        meta: `${m.email ? `${m.email} · ` : ""}${m.borrowedCount}/${maxBooks} livres empruntés`,
+        keywords: `${m.id} ${m.email || ""}`,
+        disabled: isQuotaReached,
+        disabledHint: isQuotaReached
+          ? `Quota maximal atteint (${m.borrowedCount}/${maxBooks} livres)`
+          : undefined,
+        badge: isQuotaReached
+          ? { label: "Quota atteint", tone: "danger" }
+          : undefined,
+        adornment: <Avatar name={m.name} gender={m.gender} size="sm" />,
+      };
+    });
+  }, [members, maxBooks]);
+
+  const bookOptions: ComboboxOption[] = React.useMemo(() => {
+    return initialBooks.map((b) => {
+      const activeLoan = loans.find((l) => l.bookId === b.id);
+      const isLoaned = b.status === "Emprunté" || !!activeLoan;
+      const isDamaged = b.status === "Endommagé";
+      const isLost = b.status === "Perdu";
+      const isAvailable = b.status === "Disponible" && !activeLoan;
+
+      let disabledHint: string | undefined;
+      let badge: ComboboxOption["badge"];
+
+      if (isLoaned) {
+        const returnDate = activeLoan
+          ? formatDate(activeLoan.dueDate)
+          : "date non définie";
+        disabledHint = `Prêté (Retour prévu le ${returnDate})`;
+        badge = { label: "Prêté", tone: "warning" };
+      } else if (isDamaged) {
+        disabledHint = "Livre endommagé";
+        badge = { label: "Endommagé", tone: "danger" };
+      } else if (isLost) {
+        disabledHint = "Livre signalé perdu";
+        badge = { label: "Perdu", tone: "danger" };
+      }
+
+      return {
+        id: b.id,
+        label: b.title,
+        meta: `${b.author} · ISBN: ${b.isbn}`,
+        keywords: `${b.isbn} ${b.id} ${b.category} ${b.author}`,
+        disabled: !isAvailable,
+        disabledHint,
+        badge,
+        adornment: (
+          <BookCover
+            title={b.title}
+            gradient={b.coverColor}
+            emoji={b.coverEmoji}
+            className="h-9 w-6 text-xs"
+          />
+        ),
+      };
+    });
+  }, [loans]);
+
   const ready = member !== null && book !== null;
 
   const submit = (event: React.FormEvent<HTMLFormElement>) => {
@@ -88,7 +134,7 @@ function RegisterLoanPanel({
     if (!member || !book) return;
 
     const record = initialBooks.find((item) => item.id === book.id);
-    const person = initialMembers.find((item) => item.id === member.id);
+    const person = members.find((item) => item.id === member.id);
     if (!record || !person) return;
 
     onRegister({
@@ -101,6 +147,7 @@ function RegisterLoanPanel({
       memberId: person.id,
       borrower: person.name,
       borrowerInitials: person.avatar,
+      borrowerGender: person.gender,
       borrowDate: REFERENCE_DATE,
       dueDate,
     });
@@ -111,115 +158,159 @@ function RegisterLoanPanel({
     applyDuration("14");
   };
 
+  const selectedMemberRecord = member
+    ? members.find((m) => m.id === member.id)
+    : null;
+
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center gap-3">
-          <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-brand-50">
-            <BookPlus className="size-5 text-brand-600" aria-hidden="true" />
-          </span>
-          <div>
-            <CardTitle>Enregistrer un nouvel emprunt</CardTitle>
-            <p className="mt-0.5 text-sm text-slate-500">
-              Scannez ou recherchez pour enregistrer un prêt de livre.
-            </p>
-          </div>
-        </div>
-      </CardHeader>
-
-      <form onSubmit={submit} className="space-y-5 p-6 sm:p-8">
-        <Field label="Sélectionner un membre" htmlFor="loan-member">
-          <Combobox
-            id="loan-member"
-            options={memberOptions}
-            value={member}
-            onChange={setMember}
-            leadingIcon={User}
-            placeholder="Rechercher par nom, e-mail ou identifiant..."
-            emptyMessage="Aucun membre ne correspond à cette recherche"
-            disabledHint="Compte inactif"
-          />
-        </Field>
-
-        <Field label="Sélectionner un livre" htmlFor="loan-book">
-          <Combobox
-            id="loan-book"
-            options={bookOptions}
-            value={book}
-            onChange={setBook}
-            leadingIcon={Search}
-            placeholder="Scanner l'ISBN ou rechercher par titre..."
-            emptyMessage="Aucun livre ne correspond à cette recherche"
-            disabledHint="Non disponible au prêt"
-          />
-        </Field>
-
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-          <Field label="Durée du prêt" htmlFor="loan-duration">
-            <Select
-              id="loan-duration"
-              value={duration}
-              onChange={(event) => applyDuration(event.target.value)}
-            >
-              {loanDurations.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </Select>
-          </Field>
-
-          <Field
-            label="Date d'échéance"
-            htmlFor="loan-due"
-            hint={`Retour prévu le ${formatDate(dueDate)}`}
-          >
-            <Input
-              id="loan-due"
-              type="date"
-              value={dueDate}
-              min={REFERENCE_DATE}
-              onChange={(event) => setDueDate(event.target.value)}
-              leadingIcon={CalendarDays}
-            />
-          </Field>
-        </div>
-
-        {ready ? (
-          <div className="flex items-center gap-3 rounded-xl bg-slate-50 p-4 animate-in fade-in slide-in-from-bottom-1 duration-200">
-            <Avatar name={member.label} size="md" />
-            <div className="flex min-w-0 flex-1 items-center gap-2 text-sm">
-              <span className="truncate font-medium text-slate-900">
-                {member.label}
-              </span>
-              <ArrowRight
-                className="size-4 shrink-0 text-slate-400"
-                aria-hidden="true"
-              />
-              <span className="truncate font-medium text-slate-900">
-                {book.label}
-              </span>
+    <>
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-brand-50">
+              <BookPlus className="size-5 text-brand-600" aria-hidden="true" />
+            </span>
+            <div>
+              <CardTitle>Enregistrer un nouvel emprunt</CardTitle>
+              <p className="mt-0.5 text-sm text-slate-500">
+                Recherche manuelle du membre et du livre pour valider la sortie.
+              </p>
             </div>
           </div>
-        ) : null}
+        </CardHeader>
 
-        <Button type="submit" size="lg" disabled={!ready} className="w-full">
-          <CheckCircle2 className="size-5" aria-hidden="true" />
-          Emprunter le livre
-        </Button>
+        <form onSubmit={submit} className="space-y-5 p-6 sm:p-8">
+          <div>
+            <Field
+              label="Sélectionner un membre"
+              htmlFor="loan-member"
+            >
+              <Combobox
+                id="loan-member"
+                options={memberOptions}
+                value={member}
+                onChange={setMember}
+                leadingIcon={User}
+                placeholder="Rechercher par nom, e-mail ou identifiant..."
+                emptyMessage="Aucun membre ne correspond à cette recherche"
+                disabledHint="Quota maximum d'emprunts atteint"
+              />
+            </Field>
+          </div>
 
-        <p
-          role="status"
-          aria-live="polite"
-          className={cn(
-            "text-center text-sm font-medium text-emerald-700",
-            confirmation ? "visible" : "invisible",
-          )}
-        >
-          {confirmation ?? "placeholder"}
-        </p>
-      </form>
-    </Card>
+          <Field
+            label="Sélectionner un livre"
+            htmlFor="loan-book"
+            hint="Les livres déjà empruntés sont indiqués avec leur date de retour prévue."
+          >
+            <Combobox
+              id="loan-book"
+              options={bookOptions}
+              value={book}
+              onChange={setBook}
+              leadingIcon={Search}
+              placeholder="Rechercher par ISBN ou titre du livre..."
+              emptyMessage="Aucun livre ne correspond à cette recherche"
+              disabledHint="Non disponible au prêt"
+            />
+          </Field>
+
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Field label="Durée du prêt" htmlFor="loan-duration">
+                <Select
+                  id="loan-duration"
+                  value={duration}
+                  onChange={(event) => applyDuration(event.target.value)}
+                >
+                  {loanDurations.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+
+              <div className="flex flex-wrap gap-1 pt-1">
+                {[
+                  { days: "14", label: "14 j" },
+                  { days: "30", label: "30 j" },
+                  { days: "45", label: "45 j" },
+                  { days: "60", label: "60 j" },
+                ].map((item) => (
+                  <button
+                    key={item.days}
+                    type="button"
+                    onClick={() => applyDuration(item.days)}
+                    className={cn(
+                      "rounded-lg px-2.5 py-1 text-xs font-medium transition-colors",
+                      duration === item.days
+                        ? "bg-brand-600 dark:bg-blue-600 text-white shadow-xs"
+                        : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-[#1F2A40] dark:text-[#94A3B8] dark:hover:bg-[#2E3E5A]",
+                    )}
+                  >
+                    {duration === item.days ? `✓ ${item.label}` : item.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <Field
+              label="Date d'échéance"
+              htmlFor="loan-due"
+              hint={`Retour prévu le ${formatDate(dueDate)}`}
+            >
+              <Input
+                id="loan-due"
+                type="date"
+                value={dueDate}
+                min={REFERENCE_DATE}
+                onChange={(event) => setDueDate(event.target.value)}
+                leadingIcon={CalendarDays}
+              />
+            </Field>
+          </div>
+
+          {ready ? (
+            <div className="flex items-center gap-3 rounded-xl bg-slate-50 dark:bg-[#111827] dark:border dark:border-[#212B44] p-4 animate-in fade-in slide-in-from-bottom-1 duration-200">
+              <Avatar
+                name={member.label}
+                gender={selectedMemberRecord?.gender}
+                size="md"
+              />
+              <div className="flex min-w-0 flex-1 items-center gap-2 text-sm">
+                <span className="truncate font-medium text-slate-900 dark:text-[#F3F4F6]">
+                  {member.label}
+                </span>
+                <ArrowRight
+                  className="size-4 shrink-0 text-slate-400 dark:text-[#94A3B8]"
+                  aria-hidden="true"
+                />
+                <span className="truncate font-medium text-slate-900 dark:text-[#F3F4F6]">
+                  {book.label}
+                </span>
+              </div>
+            </div>
+          ) : null}
+
+          <Button type="submit" size="lg" disabled={!ready} className="w-full">
+            <CheckCircle2 className="size-5" aria-hidden="true" />
+            Valider le prêt du livre
+          </Button>
+
+          <p
+            role="status"
+            aria-live="polite"
+            className={cn(
+              "text-center text-sm font-medium text-emerald-700 dark:text-emerald-400",
+              confirmation ? "visible" : "invisible",
+            )}
+          >
+            {confirmation ?? "placeholder"}
+          </p>
+        </form>
+      </Card>
+    </>
   );
 }
 
@@ -239,8 +330,8 @@ function LoanRow({
       className={cn(
         "flex flex-wrap items-center gap-4 rounded-xl border p-4 transition-colors sm:flex-nowrap",
         overdue
-          ? "border-rose-100 bg-rose-50/40 hover:bg-rose-50/70"
-          : "border-slate-100 hover:bg-slate-50",
+          ? "border-rose-100 bg-rose-50/40 hover:bg-rose-50/70 dark:border-rose-900/40 dark:bg-rose-950/25 dark:hover:bg-rose-950/35"
+          : "border-slate-100 hover:bg-slate-50 dark:border-[#212B44] dark:bg-[#171E31] dark:hover:bg-[#1F2A40]",
       )}
     >
       <BookCover
@@ -250,17 +341,17 @@ function LoanRow({
       />
 
       <div className="min-w-0 flex-1 basis-full sm:basis-auto">
-        <p className="truncate font-semibold text-slate-900">
+        <p className="truncate font-semibold text-slate-900 dark:text-[#F3F4F6]">
           {loan.bookTitle}
         </p>
-        <p className="truncate text-sm text-slate-500">{loan.bookAuthor}</p>
+        <p className="truncate text-sm text-slate-500 dark:text-[#94A3B8]">{loan.bookAuthor}</p>
         <div className="mt-1.5 flex items-center gap-2">
           <Avatar
             name={loan.borrower}
-            initials={loan.borrowerInitials}
+            gender={loan.borrowerGender}
             size="xs"
           />
-          <span className="truncate text-xs font-medium text-slate-600">
+          <span className="truncate text-xs font-medium text-slate-600 dark:text-[#94A3B8]">
             {loan.borrower}
           </span>
         </div>
@@ -274,18 +365,18 @@ function LoanRow({
           >
             {describeDueDate(loan.dueDate)}
           </Badge>
-          <p className="mt-1 whitespace-nowrap text-xs text-slate-400">
-            Emprunté depuis le {formatDate(loan.borrowDate)}
+          <p className="mt-1 whitespace-nowrap text-xs text-slate-400 dark:text-[#64748B]">
+            Emprunté le {formatDate(loan.borrowDate)}
           </p>
         </div>
 
         <Button
           variant="secondary"
           onClick={() => onReturn(loan.id)}
-          aria-label={`Retourner ${loan.bookTitle}, emprunté par ${loan.borrower}`}
-          className="hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700"
+          aria-label={`Enregistrer le retour de ${loan.bookTitle}, emprunté par ${loan.borrower}`}
+          className="hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700 dark:hover:border-emerald-700/60 dark:hover:bg-emerald-950/40 dark:hover:text-emerald-400"
         >
-          Retourner
+          Enregistrer le retour
         </Button>
       </div>
     </li>
@@ -294,15 +385,35 @@ function LoanRow({
 
 export function BorrowReturnView() {
   const [loans, setLoans] = React.useState<ActiveLoan[]>(seedLoans);
+  const [members, setMembers] = React.useState<Member[]>(initialMembers);
   const [filter, setFilter] = React.useState("");
   const [onlyOverdue, setOnlyOverdue] = React.useState(false);
 
   const registerLoan = React.useCallback((loan: ActiveLoan) => {
     setLoans((current) => [loan, ...current]);
+    setMembers((current) =>
+      current.map((m) =>
+        m.id === loan.memberId
+          ? { ...m, borrowedCount: m.borrowedCount + 1 }
+          : m,
+      ),
+    );
   }, []);
 
   const returnLoan = React.useCallback((id: string) => {
-    setLoans((current) => current.filter((loan) => loan.id !== id));
+    setLoans((current) => {
+      const target = current.find((l) => l.id === id);
+      if (target) {
+        setMembers((prev) =>
+          prev.map((m) =>
+            m.id === target.memberId
+              ? { ...m, borrowedCount: Math.max(0, m.borrowedCount - 1) }
+              : m,
+          ),
+        );
+      }
+      return current.filter((loan) => loan.id !== id);
+    });
   }, []);
 
   const visible = React.useMemo(() => {
@@ -327,12 +438,16 @@ export function BorrowReturnView() {
     <PageContainer>
       <PageHeader
         title="Prêts & Retours"
-        description="Traitez les nouveaux emprunts et gérez les prêts en cours."
+        description="Traitez les nouveaux emprunts et gérez les retours de livres."
       />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 lg:gap-8">
         <div className="lg:col-span-5 lg:sticky lg:top-[calc(var(--spacing-header)+2rem)] lg:self-start">
-          <RegisterLoanPanel onRegister={registerLoan} />
+          <RegisterLoanPanel
+            loans={loans}
+            onRegister={registerLoan}
+            members={members}
+          />
         </div>
 
         <div className="lg:col-span-7">
@@ -340,12 +455,12 @@ export function BorrowReturnView() {
             <CardHeader className="gap-3">
               <div className="min-w-0">
                 <CardTitle>Emprunts en cours &amp; retours</CardTitle>
-                <p className="mt-0.5 text-sm text-slate-500">
+                <p className="mt-0.5 text-sm text-slate-500 dark:text-[#94A3B8]">
                   {loans.length} en cours de prêt
                   {overdueCount > 0 ? (
                     <>
                       {", "}
-                      <span className="font-medium text-rose-600">
+                      <span className="font-medium text-rose-600 dark:text-rose-400">
                         {overdueCount} en retard
                       </span>
                     </>
@@ -361,7 +476,7 @@ export function BorrowReturnView() {
                   leadingIcon={Search}
                   placeholder="Filtrer les emprunts..."
                   aria-label="Filtrer les emprunts actifs"
-                  className="h-10 bg-slate-50 focus:bg-white sm:w-56"
+                  className="h-10 bg-slate-50 dark:bg-[#111827] focus:bg-white dark:focus:bg-[#111827] sm:w-56"
                 />
                 <Button
                   variant={onlyOverdue ? "primary" : "secondary"}
