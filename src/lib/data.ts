@@ -13,14 +13,16 @@ export interface Book {
   description: string;
 }
 
+export type Gender = "F" | "M";
+
 export interface Member {
   id: string;
   name: string;
-  email: string;
+  email?: string;
+  gender: Gender;
   role: "Admin" | "Bibliothécaire" | "Membre";
   joinDate: string;
   avatar: string;
-  status: "Actif" | "Inactif";
   borrowedCount: number;
 }
 
@@ -223,82 +225,82 @@ export const initialMembers: Member[] = [
   {
     id: "MEM-001",
     name: "Sarah Connor",
-    email: "sarah.connor@libris.com",
+    email: "sarah.connor@agbale.app",
+    gender: "F",
     role: "Admin",
     joinDate: "2024-01-15",
     avatar: "SC",
-    status: "Actif",
     borrowedCount: 2,
   },
   {
     id: "MEM-002",
     name: "Jean Dupont",
     email: "jean.dupont@email.com",
+    gender: "M",
     role: "Membre",
     joinDate: "2024-02-12",
     avatar: "JD",
-    status: "Actif",
     borrowedCount: 1,
   },
   {
     id: "MEM-003",
     name: "Marie Curie",
     email: "marie.curie@sciences.org",
+    gender: "F",
     role: "Bibliothécaire",
     joinDate: "2024-02-20",
     avatar: "MC",
-    status: "Actif",
     borrowedCount: 3,
   },
   {
     id: "MEM-004",
     name: "Marc Dubois",
     email: "marc.dubois@email.com",
+    gender: "M",
     role: "Membre",
     joinDate: "2024-03-05",
     avatar: "MD",
-    status: "Actif",
     borrowedCount: 2,
   },
   {
     id: "MEM-005",
     name: "Emily Chen",
     email: "emily.chen@email.com",
+    gender: "F",
     role: "Membre",
     joinDate: "2024-03-10",
     avatar: "EC",
-    status: "Actif",
     borrowedCount: 1,
   },
   {
     id: "MEM-006",
     name: "Marcus Johnson",
     email: "marcus.j@email.com",
+    gender: "M",
     role: "Bibliothécaire",
     joinDate: "2024-03-22",
     avatar: "MJ",
-    status: "Actif",
     borrowedCount: 0,
   },
   {
     id: "MEM-007",
     name: "Lisa Park",
     email: "lisa.park@email.com",
+    gender: "F",
     role: "Membre",
     joinDate: "2024-04-05",
     avatar: "LP",
-    status: "Actif",
     borrowedCount: 2,
   },
   {
     id: "MEM-008",
     name: "David Wilson",
     email: "david.w@email.com",
+    gender: "M",
     role: "Membre",
     joinDate: "2024-04-18",
     avatar: "DW",
-    status: "Inactif",
-    borrowedCount: 0,
+    borrowedCount: 5,
   },
 ];
 
@@ -507,13 +509,28 @@ export const categories = [
   "Philosophie",
 ];
 
+export const categoryEmojis: Record<string, string> = {
+  Fiction: "📚",
+  Science: "🔬",
+  Histoire: "📜",
+  Fantasy: "🧙‍♂️",
+  Biographie: "📂",
+  Technologie: "💻",
+  "Science-fiction": "🚀",
+  Art: "🎨",
+  Philosophie: "🏛️",
+};
+
 export const bookConditions = ["Neuf", "Très bon état", "Bon état", "État moyen", "Endommagé"];
 
 export const loanDurations = [
-  { value: "14", label: "14 jours (standard)" },
   { value: "7", label: "7 jours (forte demande)" },
+  { value: "14", label: "14 jours (standard)" },
   { value: "30", label: "30 jours (prolongé)" },
+  { value: "45", label: "45 jours (recherche / enseignant)" },
+  { value: "60", label: "60 jours (longue durée)" },
 ];
+
 
 export const REFERENCE_DATE = "2026-10-13";
 
@@ -561,6 +578,7 @@ export interface ActiveLoan {
   memberId: string;
   borrower: string;
   borrowerInitials: string;
+  borrowerGender?: Gender;
   borrowDate: string;
   dueDate: string;
 }
@@ -576,6 +594,7 @@ export const activeLoans: ActiveLoan[] = [
     memberId: "MEM-004",
     borrower: "Marc Dubois",
     borrowerInitials: "MD",
+    borrowerGender: "M",
     borrowDate: shiftDays(REFERENCE_DATE, -17),
     dueDate: shiftDays(REFERENCE_DATE, -3),
   },
@@ -589,6 +608,7 @@ export const activeLoans: ActiveLoan[] = [
     memberId: "MEM-007",
     borrower: "Lisa Park",
     borrowerInitials: "LP",
+    borrowerGender: "F",
     borrowDate: shiftDays(REFERENCE_DATE, -15),
     dueDate: shiftDays(REFERENCE_DATE, -1),
   },
@@ -602,6 +622,7 @@ export const activeLoans: ActiveLoan[] = [
     memberId: "MEM-005",
     borrower: "Emily Chen",
     borrowerInitials: "EC",
+    borrowerGender: "F",
     borrowDate: shiftDays(REFERENCE_DATE, -14),
     dueDate: REFERENCE_DATE,
   },
@@ -615,6 +636,7 @@ export const activeLoans: ActiveLoan[] = [
     memberId: "MEM-002",
     borrower: "Jean Dupont",
     borrowerInitials: "JD",
+    borrowerGender: "M",
     borrowDate: shiftDays(REFERENCE_DATE, -13),
     dueDate: shiftDays(REFERENCE_DATE, 1),
   },
@@ -628,6 +650,7 @@ export const activeLoans: ActiveLoan[] = [
     memberId: "MEM-003",
     borrower: "Marie Curie",
     borrowerInitials: "MC",
+    borrowerGender: "F",
     borrowDate: shiftDays(REFERENCE_DATE, -9),
     dueDate: shiftDays(REFERENCE_DATE, 5),
   },
@@ -641,6 +664,7 @@ export const activeLoans: ActiveLoan[] = [
     memberId: "MEM-001",
     borrower: "Sarah Connor",
     borrowerInitials: "SC",
+    borrowerGender: "F",
     borrowDate: shiftDays(REFERENCE_DATE, -4),
     dueDate: shiftDays(REFERENCE_DATE, 10),
   },
@@ -654,6 +678,7 @@ export const activeLoans: ActiveLoan[] = [
     memberId: "MEM-006",
     borrower: "Marcus Johnson",
     borrowerInitials: "MJ",
+    borrowerGender: "M",
     borrowDate: shiftDays(REFERENCE_DATE, -2),
     dueDate: shiftDays(REFERENCE_DATE, 12),
   },
@@ -662,9 +687,11 @@ export const activeLoans: ActiveLoan[] = [
 export const currentUser = {
   name: "Sarah Connor",
   email: "sarah.connor@agbale.app",
-  role: "Bibliothécaire en chef",
+  role: "Library Admin",
+  gender: "F" as Gender,
   avatar: "SC",
 } as const;
+
 
 export interface Notification {
   id: string;
