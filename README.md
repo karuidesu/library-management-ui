@@ -1,8 +1,5 @@
 # Agbale — Library Management System
 
-A Next.js 16 library management UI: catalog, members, lending, analytics and
-settings, built with the App Router, Tailwind CSS v4, Recharts and lucide icons.
-
 ## Getting started
 
 ```bash
@@ -23,25 +20,28 @@ Other scripts:
 
 ```
 src/
-  app/
-    layout.tsx            Root layout, metadata, font preload
-    page.tsx              Redirects to /login
-    globals.css           Design tokens (@theme), base layer, utilities
-    (auth)/login/         Sign-in, rendered outside the app shell
-    (app)/                Signed-in routes, all sharing AppShell
-      layout.tsx
-      dashboard|catalog|members|borrow|analytics|settings/
-  components/
-    layout/               AppShell, Sidebar, Header
-    ui/                   Button, Card, Badge, Field, Modal, DropdownMenu,
-                          Combobox, Pagination, Avatar, Page primitives
-    views/                One component per route
-  hooks/                  Focus trap, scroll lock, escape key, client state
-  lib/
-    data.ts               Single source of mock data for every view
-    nav.ts                The one list of routes
-    cn.ts                 Tailwind-aware class merge
+├── app/
+│   ├── layout.tsx              # Root layout & global AppShell wrapper
+│   ├── page.tsx                # Redirects to /login
+│   ├── globals.css             # Design tokens (@theme), base layer, utilities
+│   ├── login/                  # Sign-in view (rendered clean without sidebar/header)
+│   ├── dashboard/              # Main overview & recent activity feed
+│   ├── catalog/                # Book catalog management with category emojis
+│   ├── members/                # Member directory with direct row actions
+│   ├── borrow/                 # Borrowing & return circulation workflows
+│   ├── analytics/              # Real-time KPIs & stacked annual trend charts
+│   └── settings/               # Theme cards (Light/Dark) & circulation rules
+├── components/
+│   ├── layout/                 # AppShell, Sidebar (w-80), Header (static user, theme toggle)
+│   ├── ui/                     # Button, Card, Badge, Field, Modal, Combobox, etc.
+│   └── views/                  # One component per route
+├── hooks/                      # useTheme, focus trap, scroll lock, escape key, client state
+└── lib/
+    ├── data.ts                 # Single source of mock data for every view
+    ├── nav.ts                  # Centralized route definitions (mainNavItems, settingsNavItem)
+    └── cn.ts                   # Tailwind-aware class merge
 ```
+
 
 ## Conventions worth knowing
 
@@ -84,3 +84,14 @@ Dialogs and the mobile drawer trap focus, close on Escape, lock body scroll and
 return focus to their trigger. The combobox follows the ARIA combobox pattern.
 Icon-only controls carry labels, tap targets clear 24px, and charts ship a
 legend plus a visually hidden data table.
+
+## Contribution
+
+1. Fork the repository
+2. Create a branch for your modifications 
+3. Commit your changes
+4. Open a Pull Request
+
+## MIT License
+
+### *_ARIGATO_*
