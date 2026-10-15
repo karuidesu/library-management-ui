@@ -4,7 +4,9 @@ import * as React from "react";
 
 const STORAGE_KEY_NAME = "agbale:establishment-name";
 const STORAGE_KEY_MAX_BOOKS = "agbale:max-borrowed-books";
-export const DEFAULT_ESTABLISHMENT_NAME = "Bibliothèque Centrale";
+export const DEFAULT_ESTABLISHMENT_NAME =
+  (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_ORGANIZATION_NAME) ||
+  "Bibliothèque Centrale";
 export const DEFAULT_MAX_BOOKS = 5;
 
 function subscribe(callback: () => void) {

@@ -4,17 +4,17 @@ import * as React from "react";
 import Link from "next/link";
 import {
   AlertTriangle,
-  ArrowDownRight,
   ArrowRight,
-  ArrowUpRight,
   BookOpen,
   Clock,
+  FileText,
   Users,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { activityTone, Badge } from "@/components/ui/Badge";
 import { Avatar } from "@/components/ui/Avatar";
+import { Button } from "@/components/ui/Button";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 import {
   PageContainer,
@@ -23,7 +23,9 @@ import {
   Td,
   Th,
 } from "@/components/ui/Page";
-import { currentUser, dashboardActivities, initialMembers, kpis } from "@/lib/data";
+import { SystemReportModal } from "@/components/reports/SystemReportModal";
+import { useLibrarySettings } from "@/hooks/useLibrarySettings";
+import { dashboardActivities, initialMembers, kpis } from "@/lib/data";
 
 const kpiVisuals: Record<string, { icon: LucideIcon; className: string }> = {
   "total-books": {
@@ -44,49 +46,57 @@ const kpiVisuals: Record<string, { icon: LucideIcon; className: string }> = {
   },
 };
 
+const kpiSubtitles: Record<string, string> = {
+  "total-books": "Dans le catalogue de la bibliothèque",
+  "active-members": "Adhérents inscrits au service",
+  "books-borrowed": "Actuellement en circulation",
+  "overdue-returns": "Prêts en dépassement d'échéance",
+};
+
 function KpiCard({
   id,
   label,
   value,
-  trend,
-  higherIsBetter,
 }: (typeof kpis)[number]) {
   const visual = kpiVisuals[id];
   const Icon = visual.icon;
-  const rising = trend >= 0;
-  const good = rising === higherIsBetter;
-  const TrendIcon = rising ? ArrowUpRight : ArrowDownRight;
 
   return (
     <Card interactive className="p-6">
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex items-center justify-between">
         <span
           className={cn("grid size-12 shrink-0 place-items-center rounded-xl", visual.className)}
         >
           <Icon className="size-6" aria-hidden="true" />
         </span>
-        <Badge tone={good ? "success" : "danger"} className="shrink-0 gap-1">
-          <TrendIcon className="size-3 shrink-0" aria-hidden="true" />
-          {rising ? "+" : ""}
-          {trend}%
-        </Badge>
       </div>
 
       <h3 className="mt-5 text-sm font-medium text-slate-500 dark:text-[#94A3B8]">{label}</h3>
       <p className="mt-1 text-3xl font-semibold tracking-tight text-slate-900 dark:text-[#F3F4F6] tabular-nums">
         {value.toLocaleString("fr-FR")}
       </p>
-      <p className="mt-2 text-xs text-slate-400 dark:text-[#64748B]">par rapport aux 30 derniers jours</p>
+      <p className="mt-2 text-xs text-slate-400 dark:text-[#64748B]">
+        {kpiSubtitles[id] || "Données enregistrées"}
+      </p>
     </Card>
   );
 }
 
 export function DashboardView() {
+  const { establishmentName } = useLibrarySettings();
+  const [isReportOpen, setIsReportOpen] = React.useState(false);
+
   return (
     <PageContainer>
       <PageHeader
         title="Aperçu"
-        description={`Bon retour, ${currentUser.name.split(" ")[0]}. Voici ce qui se passe dans votre bibliothèque aujourd'hui.`}
+        description={`Voici les statistiques sur les 30 derniers jours de la bibliothèque ${establishmentName}.`}
+        actions={
+          <Button variant="secondary" onClick={() => setIsReportOpen(true)}>
+            <FileText className="size-4" aria-hidden="true" />
+            Générer le rapport système (30 jours)
+          </Button>
+        }
       />
 
       <div className="mb-6 grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-6 xl:grid-cols-4">
@@ -215,6 +225,11 @@ export function DashboardView() {
           ))}
         </ul>
       </Card>
+
+      <SystemReportModal
+        open={isReportOpen}
+        onClose={() => setIsReportOpen(false)}
+      />
     </PageContainer>
   );
 }

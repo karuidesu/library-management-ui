@@ -228,7 +228,7 @@ function RegisterMemberModal({
         <Field label="Nom complet" htmlFor="new-member-name" required>
           <Input
             id="new-member-name"
-            placeholder="ex. Marguerite Duras ou Léo Martin"
+            placeholder=" Marguerite Duras ou Léo Martin"
             value={name}
             onChange={(e) => setName(e.target.value)}
             data-autofocus
@@ -241,8 +241,8 @@ function RegisterMemberModal({
               value={gender}
               onChange={(e) => setGender(e.target.value as Member["gender"])}
             >
-              <option value="F">Féminin (Femme / Fille)</option>
-              <option value="M">Masculin (Homme / Garçon)</option>
+              <option value="F">Feminin</option>
+              <option value="M">Masculin</option>
             </Select>
           </Field>
           <Field label="Rôle initial" htmlFor="new-member-role" required>
@@ -258,14 +258,14 @@ function RegisterMemberModal({
           </Field>
         </div>
         <Field
-          label="Adresse e-mail (optionnelle)"
+          label="Adresse e-mail"
           htmlFor="new-member-email"
           hint="Non obligatoire, notamment pour les enfants ou usagers sans boîte mail."
         >
           <Input
             id="new-member-email"
             type="email"
-            placeholder="ex. contact@famille.fr (optionnel)"
+            placeholder=" adresse@gmail.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />

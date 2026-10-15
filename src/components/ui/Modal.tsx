@@ -18,7 +18,7 @@ interface ModalProps {
   title: string;
   description?: string;
   footer?: React.ReactNode;
-  size?: "md" | "lg" | "xl";
+  size?: "md" | "lg" | "xl" | "2xl";
   children: React.ReactNode;
 }
 
@@ -26,6 +26,7 @@ const widths = {
   md: "sm:max-w-lg",
   lg: "sm:max-w-2xl",
   xl: "sm:max-w-4xl",
+  "2xl": "sm:max-w-6xl",
 } as const;
 
 export function Modal({

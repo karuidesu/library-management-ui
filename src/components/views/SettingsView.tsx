@@ -91,23 +91,43 @@ function ProfileSection() {
         </div>
 
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-          <Field label="Nom complet" htmlFor="settings-name">
-            <Input id="settings-name" defaultValue={currentUser.name} />
-          </Field>
-          <Field label="Adresse e-mail" htmlFor="settings-email">
-            <Input
-              id="settings-email"
-              type="email"
-              defaultValue={currentUser.email}
-            />
-          </Field>
-          <div className="sm:col-span-2">
-            <Field label="Rôle" htmlFor="settings-role">
-              <Select id="settings-role" defaultValue={currentUser.role}>
-                <option value="Library Admin">Library Admin</option>
-                <option value="Bibliothécaire">Bibliothécaire</option>
-                <option value="Membre">Membre</option>
-              </Select>
+          <div className="space-y-5">
+            <Field label="Nom complet" htmlFor="settings-name">
+              <Input id="settings-name" defaultValue={currentUser.name} />
+            </Field>
+            <Field
+              label="Numéro de téléphone"
+              htmlFor="settings-phone"
+              hint="Numéro direct pour les notifications d'urgence et de service."
+            >
+              <Input
+                id="settings-phone"
+                type="tel"
+                defaultValue={currentUser.phone}
+                placeholder="+229 97 00 12 34"
+              />
+            </Field>
+          </div>
+
+          <div className="space-y-5">
+            <Field label="Adresse e-mail" htmlFor="settings-email">
+              <Input
+                id="settings-email"
+                type="email"
+                defaultValue={currentUser.email}
+              />
+            </Field>
+            <Field
+              label="Rôle"
+              htmlFor="settings-role"
+              hint="Attribué par l'administrateur système (non modifiable)."
+            >
+              <Input
+                id="settings-role"
+                value={currentUser.role}
+                disabled
+                readOnly
+              />
             </Field>
           </div>
         </div>
@@ -269,7 +289,7 @@ function PreferencesSection() {
 }
 
 function LibrarySection() {
-  const { establishmentName, setEstablishmentName, maxBooks, setMaxBooks } = useLibrarySettings();
+  const { establishmentName, maxBooks, setMaxBooks } = useLibrarySettings();
 
   return (
     <Card>
@@ -286,13 +306,13 @@ function LibrarySection() {
         <Field
           label="Nom de l'établissement"
           htmlFor="settings-library"
-          hint="Ce nom apparaît directement sous 'Agbale' dans le menu latéral et les en-têtes."
+          hint="Récupéré depuis les variables d'environnement du backend (non modifiable depuis cette interface)."
         >
           <Input
             id="settings-library"
             value={establishmentName}
-            onChange={(e) => setEstablishmentName(e.target.value)}
-            placeholder="ex. Bibliothèque Centrale"
+            disabled
+            readOnly
           />
         </Field>
         <Field label="Durée de prêt standard" htmlFor="settings-loan-period">

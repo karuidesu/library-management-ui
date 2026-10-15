@@ -3,18 +3,11 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bell, ChevronRight, Moon, Search, Sun, X } from "lucide-react";
+import { ChevronRight, Moon, Search, Sun, X } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { APP_NAME, navItemFor } from "@/lib/nav";
-import { currentUser, notifications } from "@/lib/data";
+import { currentUser } from "@/lib/data";
 import { useTheme } from "@/hooks/useTheme";
-import { Avatar } from "@/components/ui/Avatar";
-import {
-  DropdownItem,
-  DropdownLabel,
-  DropdownMenu,
-  DropdownSeparator,
-} from "@/components/ui/DropdownMenu";
 import { SidebarTrigger } from "./Sidebar";
 
 function Breadcrumbs() {
@@ -109,67 +102,6 @@ function MobileSearch() {
   );
 }
 
-function NotificationsMenu() {
-  const unread = notifications.filter((item) => !item.read).length;
-
-  return (
-    <DropdownMenu
-      label="Notifications"
-      align="end"
-      className="w-[min(22rem,calc(100vw-1.5rem))]"
-      trigger={
-        <button
-          type="button"
-          aria-label={
-            unread > 0
-              ? `Notifications, ${unread} non lue(s)`
-              : "Notifications, aucune non lue"
-          }
-          className="relative grid size-11 place-items-center rounded-xl text-slate-500 dark:text-[#94A3B8] outline-none transition-colors hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-[#171E31] dark:hover:text-[#F3F4F6] focus-visible:ring-4 focus-visible:ring-brand-600/20"
-        >
-          <Bell className="size-5" aria-hidden="true" />
-          {unread > 0 ? (
-            <span
-              aria-hidden="true"
-              className="absolute right-2.5 top-2.5 size-2 rounded-full bg-rose-500 ring-2 ring-white dark:ring-[#0B0F19]"
-            />
-          ) : null}
-        </button>
-      }
-    >
-      <DropdownLabel>Notifications</DropdownLabel>
-      {notifications.map((item) => (
-        <DropdownItem key={item.id} className="items-start gap-3 py-2.5">
-          <span className="flex min-w-0 flex-col gap-0.5">
-            <span className="flex items-center gap-2">
-              <span
-                aria-hidden="true"
-                className={cn(
-                  "size-1.5 shrink-0 rounded-full",
-                  item.read ? "bg-slate-300 dark:bg-slate-600" : "bg-brand-600 dark:bg-blue-400",
-                )}
-              />
-              <span className="truncate font-semibold text-slate-900 dark:text-[#F3F4F6]">
-                {item.title}
-              </span>
-            </span>
-            <span className="line-clamp-2 whitespace-normal text-xs font-normal text-slate-500 dark:text-[#94A3B8]">
-              {item.body}
-            </span>
-            <span className="text-xs font-normal text-slate-400 dark:text-[#64748B]">
-              {item.time}
-            </span>
-          </span>
-        </DropdownItem>
-      ))}
-      <DropdownSeparator />
-      <DropdownItem className="justify-center text-brand-600 dark:text-blue-400 hover:text-brand-700 dark:hover:text-blue-300">
-        Voir toutes les notifications
-      </DropdownItem>
-    </DropdownMenu>
-  );
-}
-
 function ThemeToggleShortcut() {
   const { theme, toggleTheme } = useTheme();
   const isDark = theme === "dark";
@@ -195,13 +127,25 @@ function StaticUserProfile() {
   return (
     <div
       aria-label={`Session active : ${currentUser.name}, ${currentUser.role}`}
-      className="flex select-none items-center gap-3 py-1 pl-1 pr-1 sm:pr-2.5"
+      className="flex select-none items-center gap-3 py-1 pl-1.5 pr-2 rounded-full sm:rounded-xl transition-colors hover:bg-slate-100/60 dark:hover:bg-[#171E31]/60"
     >
-      <Avatar
-        name={currentUser.name}
-        gender={currentUser.gender}
-        size="lg"
-      />
+      <div className="relative">
+        <div
+          role="img"
+          aria-label={`Avatar de ${currentUser.name}`}
+          className="relative flex size-10 shrink-0 select-none items-center justify-center rounded-full bg-gradient-to-tr from-brand-600 via-indigo-600 to-violet-500 text-white font-semibold text-xs tracking-wider shadow-sm ring-2 ring-white dark:ring-[#0B0F19]"
+        >
+          {currentUser.avatar || "SC"}
+        </div>
+        {/* Subtle active status indicator dot on bottom corner */}
+        <span
+          className="absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-[#0B0F19]"
+          aria-hidden="true"
+        >
+          <span className="absolute inset-0 rounded-full bg-emerald-400 animate-ping opacity-60" />
+        </span>
+      </div>
+
       <div className="hidden min-w-0 text-left sm:block">
         <span className="block truncate text-sm font-semibold leading-tight text-slate-900 dark:text-[#F3F4F6]">
           {currentUser.name}
@@ -243,7 +187,6 @@ export function Header() {
 
       <div className="flex shrink-0 items-center gap-1 sm:gap-2">
         <MobileSearch />
-        <NotificationsMenu />
         <ThemeToggleShortcut />
         <div
           aria-hidden="true"
