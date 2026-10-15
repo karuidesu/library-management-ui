@@ -19,6 +19,8 @@ import { Button } from "@/components/ui/Button";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Select } from "@/components/ui/Field";
 import { PageContainer, PageHeader } from "@/components/ui/Page";
+import { SystemReportModal } from "@/components/reports/SystemReportModal";
+import { useLibrarySettings } from "@/hooks/useLibrarySettings";
 import {
   bookStatusData,
   borrowingTrendsData,
@@ -321,11 +323,58 @@ function PopularCategories() {
 
 export function AnalyticsView() {
   const [range, setRange] = React.useState("12");
+  const [isReportOpen, setIsReportOpen] = React.useState(false);
+  const { establishmentName } = useLibrarySettings();
+
+  const [reportDate, setReportDate] = React.useState<string>("");
+
+  React.useEffect(() => {
+    setReportDate(
+      new Intl.DateTimeFormat("fr-FR", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+        timeZone: "UTC",
+      }).format(new Date())
+    );
+  }, []);
+
+  const periodLabel =
+    range === "12"
+      ? "12 derniers mois"
+      : range === "6"
+        ? "6 derniers mois"
+        : "3 derniers mois";
 
   return (
     <PageContainer>
+      {/* Printable official header shown ONLY on printed document / PDF */}
+      <div className="mb-8 hidden border-b-2 border-slate-900 pb-4 print:block">
+        <div className="flex items-start justify-between">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+              Rapport d&apos;activité &amp; Statistiques
+            </h1>
+            <p className="mt-1 text-sm font-semibold text-slate-700">
+              {establishmentName} &middot; Agbale
+            </p>
+          </div>
+          <div className="text-right text-xs text-slate-600">
+            <p>
+              <strong>Période analysée :</strong> {periodLabel}
+            </p>
+            {reportDate ? (
+              <p className="mt-0.5">
+                <strong>Date d&apos;émission :</strong> {reportDate}
+              </p>
+            ) : null}
+          </div>
+        </div>
+      </div>
+
       <PageHeader
-        title="Analyses & Statistiques"
+        className="print:hidden"
+        title="Statistiques"
         description="Vue consolidée des performances, de l'état des collections et des volumes de prêt."
         actions={
           <>
@@ -339,9 +388,9 @@ export function AnalyticsView() {
               <option value="6">6 derniers mois</option>
               <option value="12">12 derniers mois</option>
             </Select>
-            <Button variant="secondary">
+            <Button variant="secondary" onClick={() => setIsReportOpen(true)}>
               <DownloadCloud className="size-[1.125rem]" aria-hidden="true" />
-              Générer un rapport
+              Générer le rapport système
             </Button>
           </>
         }
@@ -365,6 +414,11 @@ export function AnalyticsView() {
         </h2>
         <BorrowingTrends months={Number(range)} />
       </section>
+
+      <SystemReportModal
+        open={isReportOpen}
+        onClose={() => setIsReportOpen(false)}
+      />
     </PageContainer>
   );
 }

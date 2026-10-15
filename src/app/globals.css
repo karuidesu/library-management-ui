@@ -195,3 +195,128 @@ body[dark] .card {
   clip-path: inset(50%);
   white-space: nowrap;
 }
+
+@media print {
+  aside,
+  header:not(#system-report-sheet *),
+  nav,
+  .print\:hidden {
+    display: none !important;
+  }
+
+  html,
+  body,
+  html.dark body,
+  [data-theme="dark"] body {
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+  }
+
+  main#main-content {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+  }
+
+  .card {
+    background-color: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+    box-shadow: none !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .card * {
+    color: #0f172a !important;
+  }
+
+  .text-slate-400,
+  .text-slate-500,
+  .text-slate-600,
+  .dark\:text-\[\#94A3B8\],
+  .dark\:text-\[\#64748B\] {
+    color: #475569 !important;
+  }
+
+  /* Dedicated Report Modal Print Mode */
+  body.printing-report body > div:first-child,
+  body.printing-report .min-h-full > .flex.min-h-dvh,
+  body.printing-report .flex.min-h-dvh,
+  body.printing-report main#main-content,
+  body.printing-report aside,
+  body.printing-report header:not(#system-report-sheet *),
+  body.printing-report [aria-hidden="true"],
+  body.printing-report [role="dialog"] > div:first-child,
+  body.printing-report [role="dialog"] > div:last-child,
+  body.printing-report [role="dialog"] button,
+  body.printing-report #system-report-sheet > div:first-child {
+    display: none !important;
+  }
+
+  body.printing-report {
+    overflow: visible !important;
+    background: #ffffff !important;
+  }
+
+  body.printing-report .fixed {
+    position: static !important;
+    display: block !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    min-height: auto !important;
+  }
+
+  body.printing-report [role="dialog"] {
+    position: static !important;
+    max-height: none !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    overflow: visible !important;
+    border: none !important;
+    background: #ffffff !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  body.printing-report [role="dialog"] > div.overflow-y-auto {
+    overflow: visible !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    max-height: none !important;
+  }
+
+  body.printing-report #system-report-sheet {
+    display: block !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  body.printing-report #system-report-sheet header,
+  body.printing-report #system-report-sheet .report-header {
+    display: block !important;
+  }
+
+  body.printing-report #system-report-sheet article {
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  body.printing-report #system-report-sheet * {
+    color: #0f172a !important;
+    border-color: #cbd5e1 !important;
+  }
+
+  body.printing-report #system-report-sheet section,
+  body.printing-report #system-report-sheet header,
+  body.printing-report #system-report-sheet .report-header,
+  body.printing-report #system-report-sheet table tr {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}
