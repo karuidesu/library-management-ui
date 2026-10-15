@@ -32,6 +32,7 @@ import {
   type ActiveLoan,
   type Member,
 } from "@/lib/data";
+import { getCoverByCategory } from "@/lib/covers";
 
 function addDays(iso: string, days: number) {
   const date = new Date(`${iso}T00:00:00Z`);
@@ -118,8 +119,7 @@ function RegisterLoanPanel({
         adornment: (
           <BookCover
             title={b.title}
-            gradient={b.coverColor}
-            emoji={b.coverEmoji}
+            category={b.category}
             className="h-9 w-6 text-xs"
           />
         ),
@@ -137,13 +137,15 @@ function RegisterLoanPanel({
     const person = members.find((item) => item.id === member.id);
     if (!record || !person) return;
 
+    const coverStyle = getCoverByCategory(record.category);
     onRegister({
       id: `LN-${Math.floor(Math.random() * 9000 + 1000)}`,
       bookId: record.id,
       bookTitle: record.title,
       bookAuthor: record.author,
-      coverColor: record.coverColor,
-      coverEmoji: record.coverEmoji,
+      category: record.category,
+      coverColor: coverStyle.gradient,
+      coverEmoji: coverStyle.emoji,
       memberId: person.id,
       borrower: person.name,
       borrowerInitials: person.avatar,
@@ -336,8 +338,12 @@ function LoanRow({
     >
       <BookCover
         title={loan.bookTitle}
-        gradient={loan.coverColor}
-        emoji={loan.coverEmoji}
+        category={
+          loan.category ||
+          initialBooks.find(
+            (b) => b.id === loan.bookId || b.title === loan.bookTitle,
+          )?.category
+        }
       />
 
       <div className="min-w-0 flex-1 basis-full sm:basis-auto">
@@ -437,7 +443,7 @@ export function BorrowReturnView() {
   return (
     <PageContainer>
       <PageHeader
-        title="Prêts & Retours"
+        title="Prêts / Retours"
         description="Traitez les nouveaux emprunts et gérez les retours de livres."
       />
 

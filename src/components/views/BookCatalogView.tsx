@@ -39,6 +39,7 @@ import {
   libraryStats,
   type Book,
 } from "@/lib/data";
+import { getCoverByCategory } from "@/lib/covers";
 
 const PAGE_SIZE = 6;
 const statuses: Book["status"][] = [
@@ -77,12 +78,12 @@ function AddBookModal({
           <Input
             id="book-title"
             data-autofocus
-            placeholder="ex. Le Grand Meaulnes"
+            placeholder=" Le Grand Meaulnes"
           />
         </Field>
 
         <Field label="Auteur" htmlFor="book-author" required>
-          <Input id="book-author" placeholder="ex. Alain-Fournier" />
+          <Input id="book-author" placeholder=" Alain-Fournier" />
         </Field>
 
         <Field
@@ -103,7 +104,7 @@ function AddBookModal({
           <Select id="book-category" defaultValue="Fiction">
             {categories.map((category) => (
               <option key={category} value={category}>
-                {categoryEmojis[category] ? `${categoryEmojis[category]} ` : ""}{category}
+                {getCoverByCategory(category).emoji} {category}
               </option>
             ))}
           </Select>
@@ -373,8 +374,7 @@ export function BookCatalogView() {
                         <div className="flex items-center gap-4">
                           <BookCover
                             title={book.title}
-                            gradient={book.coverColor}
-                            emoji={book.coverEmoji}
+                            category={book.category}
                           />
                           <div className="min-w-0 max-w-[20rem]">
                             <p className="truncate font-semibold text-slate-900 dark:text-[#F3F4F6]">
@@ -391,7 +391,7 @@ export function BookCatalogView() {
                       </Td>
                       <Td>
                         <Badge tone="neutral" className="gap-1.5 font-medium">
-                          <span aria-hidden="true">{categoryEmojis[book.category] ?? "📖"}</span>
+                          <span aria-hidden="true">{getCoverByCategory(book.category).emoji}</span>
                           <span>{book.category}</span>
                         </Badge>
                       </Td>
@@ -414,8 +414,7 @@ export function BookCatalogView() {
                 <li key={book.id} className="flex items-start gap-4 p-5">
                   <BookCover
                     title={book.title}
-                    gradient={book.coverColor}
-                    emoji={book.coverEmoji}
+                    category={book.category}
                   />
                   <div className="min-w-0 flex-1">
                     <p className="font-semibold text-slate-900 dark:text-[#F3F4F6]">{book.title}</p>
@@ -430,7 +429,7 @@ export function BookCatalogView() {
                         {book.status}
                       </Badge>
                       <Badge tone="neutral" className="gap-1.5 font-medium">
-                        <span aria-hidden="true">{categoryEmojis[book.category] ?? "📖"}</span>
+                        <span aria-hidden="true">{getCoverByCategory(book.category).emoji}</span>
                         <span>{book.category}</span>
                       </Badge>
                     </div>

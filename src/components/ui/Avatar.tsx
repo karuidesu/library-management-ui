@@ -55,9 +55,9 @@ export function FemaleIcon({ className }: { className?: string }) {
       className={className}
       aria-hidden="true"
     >
-      <path d="M17 11.5c1.4 0 2.5-1.2 2.5-3.5a7.5 7.5 0 0 0-15 0c0 2.3 1.1 3.5 2.5 3.5" />
-      <circle cx="12" cy="9.5" r="3.25" />
-      <path d="M6 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2" />
+      <circle cx="11" cy="7.5" r="3.75" />
+      <path d="M14.2 5.8C16.4 4.8 19 6 19.5 8.2c.5 2-.5 4-2.5 4.8" />
+      <path d="M5 21v-2a4 4 0 0 1 4-4h5a4 4 0 0 1 4 4v2" />
     </svg>
   );
 }
@@ -80,78 +80,110 @@ export function MaleIcon({ className }: { className?: string }) {
   );
 }
 
+import { getCoverByCategory } from "@/lib/covers";
+
 export function Avatar({
   name,
   initials,
   gender,
   size = "md",
+  status,
   className,
 }: {
   name: string;
   initials?: string;
   gender?: "F" | "M" | "Femme" | "Homme" | "Féminin" | "Masculin";
   size?: keyof typeof sizes;
+  status?: "online" | "offline";
   className?: string;
 }) {
   const isFemale =
     gender === "F" || gender === "Femme" || gender === "Féminin";
 
+  const resolvedInitials = initials ?? initialsOf(name);
+
   return (
-    <span
-      role="img"
-      aria-label={gender ? `${name} (${isFemale ? "Femme" : "Homme"})` : name}
-      title={name}
-      className={cn(
-        "inline-flex shrink-0 select-none items-center justify-center rounded-full",
-        "font-semibold uppercase ring-1 ring-inset",
-        sizes[size],
-        paletteFor(name),
-        className,
-      )}
-    >
-      {gender !== undefined ? (
-        isFemale ? (
-          <FemaleIcon className={iconSizes[size]} />
+    <span className="relative inline-flex shrink-0">
+      <span
+        role="img"
+        aria-label={gender ? `${name} (${isFemale ? "Femme" : "Homme"})` : name}
+        title={name}
+        className={cn(
+          "inline-flex shrink-0 select-none items-center justify-center rounded-full",
+          "font-semibold uppercase ring-1 ring-inset",
+          sizes[size],
+          paletteFor(name),
+          className,
+        )}
+      >
+        {gender !== undefined ? (
+          isFemale ? (
+            <FemaleIcon className={iconSizes[size]} />
+          ) : (
+            <MaleIcon className={iconSizes[size]} />
+          )
         ) : (
-          <MaleIcon className={iconSizes[size]} />
-        )
-      ) : initials ? (
-        initials
-      ) : (
-        <MaleIcon className={iconSizes[size]} />
-      )}
+          resolvedInitials
+        )}
+      </span>
+
+      {status === "online" ? (
+        <span
+          className="absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-[#0B0F19]"
+          aria-hidden="true"
+        >
+          <span className="absolute inset-0 rounded-full bg-emerald-400 animate-ping opacity-60" />
+        </span>
+      ) : null}
     </span>
   );
 }
 
 export function BookCover({
   title,
+  category,
   gradient,
   emoji,
   className,
 }: {
   title: string;
-  gradient: string;
-  emoji: string;
+  category?: string;
+  gradient?: string;
+  emoji?: string;
   className?: string;
 }) {
+  const catStyle = getCoverByCategory(category);
+  const activeGradient = gradient || catStyle.gradient;
+  const activeEmoji = emoji || catStyle.emoji;
+  const glow = catStyle.glow;
+
   return (
     <span
       role="img"
-      aria-label={`Couverture de ${title}`}
+      aria-label={`Couverture de ${title}${category ? ` (${category})` : ""}`}
       className={cn(
         "relative flex shrink-0 items-center justify-center overflow-hidden",
-        "rounded-md bg-gradient-to-br shadow-sm ring-1 ring-slate-900/5 dark:ring-white/10 dark:shadow-[0_2px_8px_rgba(0,0,0,0.5)]",
-        "h-14 w-10 text-base",
-        gradient,
+        "rounded-md bg-gradient-to-br shadow-sm ring-1 ring-slate-900/10 dark:ring-white/10 select-none",
+        "h-14 w-10 text-base transition-transform duration-200 hover:scale-105",
+        activeGradient,
+        glow,
         className,
       )}
     >
+      {/* Book spine highlight effect */}
       <span
         aria-hidden="true"
-        className="absolute inset-y-0 left-0 w-[3px] bg-white/20"
+        className="absolute inset-y-0 left-0 w-[3px] bg-white/25 shadow-[1px_0_2px_rgba(0,0,0,0.3)]"
       />
-      <span aria-hidden="true">{emoji}</span>
+      {/* Subtle diagonal sheen */}
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute -inset-full top-0 block -rotate-45 bg-gradient-to-b from-white/10 to-transparent"
+      />
+      {/* Thematic Category Emoji Artwork */}
+      <span aria-hidden="true" className="relative z-10 drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]">
+        {activeEmoji}
+      </span>
     </span>
   );
 }
