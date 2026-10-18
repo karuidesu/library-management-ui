@@ -38,14 +38,14 @@ export const mainNavItems: NavItem[] = [
   },
   {
     href: "/borrow",
-    label: "Prêts & Retours",
-    title: "Prêts & Retours",
+    label: "Prêts / Retours",
+    title: "Prêts / Retours",
     icon: Repeat,
   },
   {
     href: "/analytics",
     label: "Statistiques",
-    title: "Analyses & Statistiques",
+    title: "Statistiques",
     icon: BarChart3,
   },
 ];

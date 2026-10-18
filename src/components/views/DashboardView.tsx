@@ -94,7 +94,7 @@ export function DashboardView() {
         actions={
           <Button variant="secondary" onClick={() => setIsReportOpen(true)}>
             <FileText className="size-4" aria-hidden="true" />
-            Générer le rapport système (30 jours)
+            Générer le rapport système
           </Button>
         }
       />
