@@ -11,6 +11,13 @@
 - **Paramètres et règles de la bibliothèque** : Configuration personnalisée des règles d'emprunt (durée maximale, quota de livres par membre), gestion du profil et bascule de thème clair/sombre.
 - **Sécurité et authentification** : Interface de connexion pour protéger l'accès à l'application et restreindre les actions administratives.
 
+## Stack 
+- Next.js
+- Tailwind CSS
+- Prérequis : Node.js
+
+> Le frontend du projet a été développé avec l'aide de Google Gemini.
+
 ## Installation
 
 ```bash
@@ -54,7 +61,6 @@ src/
 4. Ouvrez une Pull Request
 
 ## Licence MIT
-
 Développé pour les ONG à des fins éducatives ღ
 
 ### *_ARIGATO_*
