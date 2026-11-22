@@ -190,8 +190,10 @@ function RegisterMemberModal({
       email: email.trim() || undefined,
       gender,
       role,
+      created_at: REFERENCE_DATE,
       joinDate: REFERENCE_DATE,
       avatar: initials,
+      active_loans_count: 0,
       borrowedCount: 0,
     };
 
@@ -432,14 +434,14 @@ export function MemberDirectoryView() {
                       </Td>
                       <Td className="text-right font-medium text-slate-700 dark:text-[#E2E8F0] tabular-nums">
                         <span className="inline-flex items-center justify-end gap-2">
-                          <span>{member.borrowedCount} / {maxBooks}</span>
-                          {member.borrowedCount >= maxBooks ? (
+                          <span>{(member.active_loans_count ?? member.borrowedCount ?? 0)} / {maxBooks}</span>
+                          {(member.active_loans_count ?? member.borrowedCount ?? 0) >= maxBooks ? (
                             <Badge tone="danger">Quota atteint</Badge>
                           ) : null}
                         </span>
                       </Td>
                       <Td className="whitespace-nowrap text-sm text-slate-600 dark:text-[#94A3B8]">
-                        {formatJoinDate(member.joinDate)}
+                        {formatJoinDate(member.created_at || member.joinDate || "")}
                       </Td>
                       <Td className="pr-6 text-right lg:pr-8">
                         <div className="flex items-center justify-end gap-1.5">
@@ -506,15 +508,15 @@ export function MemberDirectoryView() {
                       </p>
                       <div className="mt-2.5 flex flex-wrap items-center gap-2">
                         <Badge tone={roleTone[member.role]}>{member.role}</Badge>
-                        {member.borrowedCount >= maxBooks ? (
-                          <Badge tone="danger">Quota atteint ({member.borrowedCount}/{maxBooks})</Badge>
+                        {(member.active_loans_count ?? member.borrowedCount ?? 0) >= maxBooks ? (
+                          <Badge tone="danger">Quota atteint ({(member.active_loans_count ?? member.borrowedCount ?? 0)}/{maxBooks})</Badge>
                         ) : (
-                          <Badge tone="neutral">{member.borrowedCount}/{maxBooks} empruntés</Badge>
+                          <Badge tone="neutral">{(member.active_loans_count ?? member.borrowedCount ?? 0)}/{maxBooks} empruntés</Badge>
                         )}
                       </div>
                       <p className="mt-2 text-xs text-slate-400 dark:text-[#64748B]">
-                        Inscrit le {formatJoinDate(member.joinDate)} &middot;{" "}
-                        {member.borrowedCount} en prêt
+                        Inscrit le {formatJoinDate(member.created_at || member.joinDate || "")} &middot;{" "}
+                        {member.active_loans_count ?? member.borrowedCount ?? 0} en prêt
                       </p>
                     </div>
                   </div>

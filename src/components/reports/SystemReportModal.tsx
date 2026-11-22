@@ -188,81 +188,118 @@ const mockReportData = {
   loans: [
     {
       id: "LN-2041",
+      book_title: "1984",
+      book_author: "George Orwell",
       bookTitle: "1984",
       bookAuthor: "George Orwell",
       borrower: "Marc Dubois",
       borrowerGender: "M" as const,
+      checkout_date: "2026-09-28",
+      due_date: "2026-10-12",
       checkoutDate: "2026-09-28",
       dueDate: "2026-10-12",
       status: "En retard" as const,
+      handling_staff: "Sarah Connor",
       handlingStaff: "Sarah Connor",
     },
     {
       id: "LN-2042",
+      book_title: "Sapiens: A Brief History",
+      book_author: "Yuval Noah Harari",
       bookTitle: "Sapiens: A Brief History",
       bookAuthor: "Yuval Noah Harari",
       borrower: "Lisa Park",
       borrowerGender: "F" as const,
+      checkout_date: "2026-09-30",
+      due_date: "2026-10-14",
       checkoutDate: "2026-09-30",
       dueDate: "2026-10-14",
       status: "En retard" as const,
+      handling_staff: "Marcus Johnson",
       handlingStaff: "Marcus Johnson",
     },
     {
       id: "LN-2043",
+      book_title: "Le Petit Prince",
+      book_author: "A. de Saint-Exupéry",
       bookTitle: "Le Petit Prince",
       bookAuthor: "A. de Saint-Exupéry",
       borrower: "Emily Chen",
       borrowerGender: "F" as const,
+      checkout_date: "2026-10-01",
+      due_date: "2026-10-15",
       checkoutDate: "2026-10-01",
       dueDate: "2026-10-15",
       status: "En cours" as const,
+      handling_staff: "Marie Curie",
       handlingStaff: "Marie Curie",
     },
     {
       id: "LN-2044",
+      book_title: "Clean Code",
+      book_author: "Robert C. Martin",
       bookTitle: "Clean Code",
       bookAuthor: "Robert C. Martin",
       borrower: "Jean Dupont",
       borrowerGender: "M" as const,
+      checkout_date: "2026-10-02",
+      due_date: "2026-10-16",
       checkoutDate: "2026-10-02",
       dueDate: "2026-10-16",
       status: "En cours" as const,
+      handling_staff: "Sarah Connor",
       handlingStaff: "Sarah Connor",
     },
     {
       id: "LN-2045",
+      book_title: "Dune",
+      book_author: "Frank Herbert",
       bookTitle: "Dune",
       bookAuthor: "Frank Herbert",
       borrower: "Marie Curie",
       borrowerGender: "F" as const,
+      checkout_date: "2026-10-06",
+      due_date: "2026-10-20",
       checkoutDate: "2026-10-06",
       dueDate: "2026-10-20",
       status: "En cours" as const,
+      handling_staff: "Marcus Johnson",
       handlingStaff: "Marcus Johnson",
     },
     {
       id: "LN-2038",
+      book_title: "Marie Curie: A Life",
+      book_author: "Susan Quinn",
       bookTitle: "Marie Curie: A Life",
       bookAuthor: "Susan Quinn",
       borrower: "Kathryn Murphy",
       borrowerGender: "F" as const,
+      checkout_date: "2026-09-20",
+      due_date: "2026-10-04",
+      return_date: "2026-10-04",
       checkoutDate: "2026-09-20",
       dueDate: "2026-10-04",
       returnDate: "2026-10-04",
       status: "Retourné" as const,
+      handling_staff: "Sarah Connor",
       handlingStaff: "Sarah Connor",
     },
     {
       id: "LN-2039",
+      book_title: "The Art of War",
+      book_author: "Sun Tzu",
       bookTitle: "The Art of War",
       bookAuthor: "Sun Tzu",
       borrower: "David Wilson",
       borrowerGender: "M" as const,
+      checkout_date: "2026-09-22",
+      due_date: "2026-10-06",
+      return_date: "2026-10-05",
       checkoutDate: "2026-09-22",
       dueDate: "2026-10-06",
       returnDate: "2026-10-05",
       status: "Retourné" as const,
+      handling_staff: "Marie Curie",
       handlingStaff: "Marie Curie",
     },
   ],
@@ -336,8 +373,13 @@ function generateCsvReport(establishment: string, meta: ReportMeta): string {
   lines.push('"--- AUDIT DES EMPRUNTS ET RETOURS (30 JOURS) ---"');
   lines.push('"ID Pret","Titre du Livre","Auteur","Emprunteur","Date Sortie","Echeance","Statut","Bibliothecaire"');
   d.loans.forEach((loan) => {
+    const bookTitle = loan.book_title || loan.bookTitle;
+    const bookAuthor = loan.book_author || loan.bookAuthor;
+    const checkoutDate = loan.checkout_date || loan.checkoutDate;
+    const dueDate = loan.due_date || loan.dueDate;
+    const handlingStaff = loan.handling_staff || loan.handlingStaff;
     lines.push(
-      `"${loan.id}","${loan.bookTitle}","${loan.bookAuthor}","${loan.borrower}","${loan.checkoutDate}","${loan.dueDate}","${loan.status}","${loan.handlingStaff}"`,
+      `"${loan.id}","${bookTitle}","${bookAuthor}","${loan.borrower}","${checkoutDate}","${dueDate}","${loan.status}","${handlingStaff}"`,
     );
   });
   lines.push("");
@@ -777,9 +819,9 @@ export function SystemReportModal({ open, onClose }: SystemReportModalProps) {
                           {loan.id}
                         </td>
                         <td className="px-4 py-2.5 font-medium text-slate-900 dark:text-[#F3F4F6]">
-                          {loan.bookTitle}
+                          {loan.book_title || loan.bookTitle}
                           <span className="block text-[0.6875rem] font-normal text-slate-500">
-                            {loan.bookAuthor}
+                            {loan.book_author || loan.bookAuthor}
                           </span>
                         </td>
                         <td className="px-4 py-2.5">
@@ -795,10 +837,12 @@ export function SystemReportModal({ open, onClose }: SystemReportModalProps) {
                           </div>
                         </td>
                         <td className="px-4 py-2.5 text-slate-600 dark:text-[#94A3B8]">
-                          {loan.checkoutDate}
+                          {loan.checkout_date || loan.checkoutDate}
                         </td>
                         <td className="px-4 py-2.5 font-medium text-slate-800 dark:text-[#F3F4F6]">
-                          {loan.returnDate ? `Retourné le ${loan.returnDate}` : loan.dueDate}
+                          {(loan.return_date || loan.returnDate)
+                            ? `Retourné le ${loan.return_date || loan.returnDate}`
+                            : (loan.due_date || loan.dueDate)}
                         </td>
                         <td className="px-4 py-2.5">
                           <Badge
@@ -815,7 +859,7 @@ export function SystemReportModal({ open, onClose }: SystemReportModalProps) {
                           </Badge>
                         </td>
                         <td className="px-4 py-2.5 text-right font-medium text-slate-600 dark:text-[#94A3B8]">
-                          {loan.handlingStaff}
+                          {loan.handling_staff || loan.handlingStaff}
                         </td>
                       </tr>
                     ))}

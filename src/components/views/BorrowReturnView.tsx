@@ -65,15 +65,16 @@ function RegisterLoanPanel({
 
   const memberOptions: ComboboxOption[] = React.useMemo(() => {
     return members.map((m) => {
-      const isQuotaReached = m.borrowedCount >= maxBooks;
+      const loansCount = m.active_loans_count ?? m.borrowedCount ?? 0;
+      const isQuotaReached = loansCount >= maxBooks;
       return {
-        id: m.id,
+        id: String(m.id),
         label: m.name,
-        meta: `${m.email ? `${m.email} · ` : ""}${m.borrowedCount}/${maxBooks} livres empruntés`,
+        meta: `${m.email ? `${m.email} · ` : ""}${loansCount}/${maxBooks} livres empruntés`,
         keywords: `${m.id} ${m.email || ""}`,
         disabled: isQuotaReached,
         disabledHint: isQuotaReached
-          ? `Quota maximal atteint (${m.borrowedCount}/${maxBooks} livres)`
+          ? `Quota maximal atteint (${loansCount}/${maxBooks} livres)`
           : undefined,
         badge: isQuotaReached
           ? { label: "Quota atteint", tone: "danger" }
@@ -85,7 +86,7 @@ function RegisterLoanPanel({
 
   const bookOptions: ComboboxOption[] = React.useMemo(() => {
     return initialBooks.map((b) => {
-      const activeLoan = loans.find((l) => l.bookId === b.id);
+      const activeLoan = loans.find((l) => (l.book_id ?? l.bookId) === b.id);
       const isLoaned = b.status === "Emprunté" || !!activeLoan;
       const isDamaged = b.status === "Endommagé";
       const isLost = b.status === "Perdu";
@@ -96,7 +97,7 @@ function RegisterLoanPanel({
 
       if (isLoaned) {
         const returnDate = activeLoan
-          ? formatDate(activeLoan.dueDate)
+          ? formatDate(activeLoan.due_date || activeLoan.return_due_date || activeLoan.dueDate || "")
           : "date non définie";
         disabledHint = `Prêté (Retour prévu le ${returnDate})`;
         badge = { label: "Prêté", tone: "warning" };
@@ -109,7 +110,7 @@ function RegisterLoanPanel({
       }
 
       return {
-        id: b.id,
+        id: String(b.id),
         label: b.title,
         meta: `${b.author} · ISBN: ${b.isbn}`,
         keywords: `${b.isbn} ${b.id} ${b.category} ${b.author}`,
@@ -133,21 +134,35 @@ function RegisterLoanPanel({
     event.preventDefault();
     if (!member || !book) return;
 
-    const record = initialBooks.find((item) => item.id === book.id);
-    const person = members.find((item) => item.id === member.id);
+    const record = initialBooks.find((item) => String(item.id) === book.id);
+    const person = members.find((item) => String(item.id) === member.id);
     if (!record || !person) return;
 
     const coverStyle = getCoverByCategory(record.category);
     onRegister({
       id: `LN-${Math.floor(Math.random() * 9000 + 1000)}`,
+      book_id: record.id,
+      book_title: record.title,
+      book_author: record.author,
+      category: record.category,
+      cover_color: coverStyle.gradient,
+      cover_emoji: coverStyle.emoji,
+      member_id: person.id,
+      user_id: person.id,
+      borrower: person.name,
+      borrower_name: person.name,
+      borrower_initials: person.avatar || person.name.slice(0, 2).toUpperCase(),
+      borrower_gender: person.gender,
+      borrow_date: REFERENCE_DATE,
+      due_date: dueDate,
+      return_due_date: dueDate,
+      // camelCase aliases
       bookId: record.id,
       bookTitle: record.title,
       bookAuthor: record.author,
-      category: record.category,
       coverColor: coverStyle.gradient,
       coverEmoji: coverStyle.emoji,
       memberId: person.id,
-      borrower: person.name,
       borrowerInitials: person.avatar,
       borrowerGender: person.gender,
       borrowDate: REFERENCE_DATE,
@@ -321,9 +336,17 @@ function LoanRow({
   onReturn,
 }: {
   loan: ActiveLoan;
-  onReturn: (id: string) => void;
+  onReturn: (id: string | number) => void;
 }) {
-  const days = daysUntilDue(loan.dueDate);
+  const book_title = loan.book_title || loan.bookTitle || "";
+  const book_author = loan.book_author || loan.bookAuthor || "";
+  const book_id = loan.book_id ?? loan.bookId;
+  const due_date = loan.due_date || loan.return_due_date || loan.dueDate || "";
+  const borrow_date = loan.borrow_date || loan.borrowDate || "";
+  const borrower = loan.borrower_name || loan.borrower || "";
+  const borrower_gender = loan.borrower_gender || loan.borrowerGender;
+
+  const days = daysUntilDue(due_date);
   const overdue = days < 0;
   const dueSoon = days >= 0 && days <= 1;
 
@@ -337,28 +360,28 @@ function LoanRow({
       )}
     >
       <BookCover
-        title={loan.bookTitle}
+        title={book_title}
         category={
           loan.category ||
           initialBooks.find(
-            (b) => b.id === loan.bookId || b.title === loan.bookTitle,
+            (b) => b.id === book_id || b.title === book_title,
           )?.category
         }
       />
 
       <div className="min-w-0 flex-1 basis-full sm:basis-auto">
         <p className="truncate font-semibold text-slate-900 dark:text-[#F3F4F6]">
-          {loan.bookTitle}
+          {book_title}
         </p>
-        <p className="truncate text-sm text-slate-500 dark:text-[#94A3B8]">{loan.bookAuthor}</p>
+        <p className="truncate text-sm text-slate-500 dark:text-[#94A3B8]">{book_author}</p>
         <div className="mt-1.5 flex items-center gap-2">
           <Avatar
-            name={loan.borrower}
-            gender={loan.borrowerGender}
+            name={borrower}
+            gender={borrower_gender}
             size="xs"
           />
           <span className="truncate text-xs font-medium text-slate-600 dark:text-[#94A3B8]">
-            {loan.borrower}
+            {borrower}
           </span>
         </div>
       </div>
@@ -369,17 +392,17 @@ function LoanRow({
             tone={overdue ? "danger" : dueSoon ? "warning" : "neutral"}
             dot={overdue}
           >
-            {describeDueDate(loan.dueDate)}
+            {describeDueDate(due_date)}
           </Badge>
           <p className="mt-1 whitespace-nowrap text-xs text-slate-400 dark:text-[#64748B]">
-            Emprunté le {formatDate(loan.borrowDate)}
+            Emprunté le {formatDate(borrow_date)}
           </p>
         </div>
 
         <Button
           variant="secondary"
           onClick={() => onReturn(loan.id)}
-          aria-label={`Enregistrer le retour de ${loan.bookTitle}, emprunté par ${loan.borrower}`}
+          aria-label={`Enregistrer le retour de ${book_title}, emprunté par ${borrower}`}
           className="hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700 dark:hover:border-emerald-700/60 dark:hover:bg-emerald-950/40 dark:hover:text-emerald-400"
         >
           Enregistrer le retour
@@ -397,23 +420,33 @@ export function BorrowReturnView() {
 
   const registerLoan = React.useCallback((loan: ActiveLoan) => {
     setLoans((current) => [loan, ...current]);
+    const memberId = loan.member_id ?? loan.memberId;
     setMembers((current) =>
       current.map((m) =>
-        m.id === loan.memberId
-          ? { ...m, borrowedCount: m.borrowedCount + 1 }
+        m.id === memberId
+          ? {
+              ...m,
+              active_loans_count: (m.active_loans_count ?? m.borrowedCount ?? 0) + 1,
+              borrowedCount: (m.borrowedCount ?? m.active_loans_count ?? 0) + 1,
+            }
           : m,
       ),
     );
   }, []);
 
-  const returnLoan = React.useCallback((id: string) => {
+  const returnLoan = React.useCallback((id: string | number) => {
     setLoans((current) => {
       const target = current.find((l) => l.id === id);
       if (target) {
+        const memberId = target.member_id ?? target.memberId;
         setMembers((prev) =>
           prev.map((m) =>
-            m.id === target.memberId
-              ? { ...m, borrowedCount: Math.max(0, m.borrowedCount - 1) }
+            m.id === memberId
+              ? {
+                  ...m,
+                  active_loans_count: Math.max(0, (m.active_loans_count ?? m.borrowedCount ?? 1) - 1),
+                  borrowedCount: Math.max(0, (m.borrowedCount ?? m.active_loans_count ?? 1) - 1),
+                }
               : m,
           ),
         );
@@ -426,19 +459,28 @@ export function BorrowReturnView() {
     const needle = filter.trim().toLowerCase();
     return loans
       .filter((loan) => {
+        const bookTitle = (loan.book_title || loan.bookTitle || "").toLowerCase();
+        const borrower = (loan.borrower_name || loan.borrower || "").toLowerCase();
+        const idStr = String(loan.id).toLowerCase();
+        const dueDate = loan.due_date || loan.return_due_date || loan.dueDate || "";
         const matches =
           needle.length === 0 ||
-          loan.bookTitle.toLowerCase().includes(needle) ||
-          loan.borrower.toLowerCase().includes(needle) ||
-          loan.id.toLowerCase().includes(needle);
-        return matches && (!onlyOverdue || daysUntilDue(loan.dueDate) < 0);
+          bookTitle.includes(needle) ||
+          borrower.includes(needle) ||
+          idStr.includes(needle);
+        return matches && (!onlyOverdue || daysUntilDue(dueDate) < 0);
       })
-      .sort((a, b) => daysUntilDue(a.dueDate) - daysUntilDue(b.dueDate));
+      .sort((a, b) => {
+        const dueA = a.due_date || a.return_due_date || a.dueDate || "";
+        const dueB = b.due_date || b.return_due_date || b.dueDate || "";
+        return daysUntilDue(dueA) - daysUntilDue(dueB);
+      });
   }, [loans, filter, onlyOverdue]);
 
-  const overdueCount = loans.filter(
-    (loan) => daysUntilDue(loan.dueDate) < 0,
-  ).length;
+  const overdueCount = loans.filter((loan) => {
+    const dueDate = loan.due_date || loan.return_due_date || loan.dueDate || "";
+    return daysUntilDue(dueDate) < 0;
+  }).length;
 
   return (
     <PageContainer>

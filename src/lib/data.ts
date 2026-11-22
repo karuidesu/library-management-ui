@@ -7,13 +7,25 @@ export interface Book {
   author: string;
   isbn: string;
   category: string;
+  category_id?: number;
+  state_id?: number;
   status: "Disponible" | "Emprunté" | "Endommagé" | "Perdu";
-  coverColor: string;
-  coverAccent: string;
-  coverEmoji: string;
-  year: number;
+  cover_color: string;
+  cover_accent: string;
+  cover_emoji: string;
+  cover_image?: string | null;
+  publication_year: number;
   copies: number;
   description: string;
+  created_at?: string;
+  is_borrowed?: boolean;
+
+  // Aliases camelCase pour rétro-compatibilité
+  coverColor?: string;
+  coverAccent?: string;
+  coverEmoji?: string;
+  coverImage?: string | null;
+  year?: number;
 }
 
 export type Gender = "F" | "M";
@@ -23,37 +35,67 @@ export interface Member {
   name: string;
   email?: string;
   gender: Gender;
-  role: "Admin" | "Bibliothécaire" | "Membre";
-  joinDate: string;
+  role: "Admin" | "Bibliothécaire" | "Membre" | string;
+  role_id?: number;
+  created_at: string;
   avatar: string;
-  borrowedCount: number;
+  active_loans_count: number;
+  is_active?: boolean;
+  last_access?: string | null;
+
+  // Aliases camelCase pour rétro-compatibilité
+  joinDate?: string;
+  borrowedCount?: number;
+  borrowed_count?: number;
 }
 
 export interface Loan {
   id: string;
-  bookId: string;
-  bookTitle: string;
-  bookAuthor: string;
-  bookCoverColor: string;
-  bookEmoji: string;
-  memberId: string;
+  book_id: string;
+  book_title: string;
+  book_author: string;
+  book_cover_color?: string;
+  book_emoji?: string;
+  user_id?: string;
+  member_id: string;
   borrower: string;
-  borrowerAvatar: string;
-  borrowDate: string;
-  dueDate: string;
+  borrower_name?: string;
+  borrower_avatar?: string;
+  borrower_gender?: Gender;
+  borrow_date: string;
+  due_date: string;
+  return_due_date?: string;
+  actual_return_date?: string | null;
   status: "En cours" | "Retourné" | "En retard";
+  is_active?: boolean;
+  is_overdue?: boolean;
+
+  // Aliases camelCase pour rétro-compatibilité
+  bookId?: string;
+  bookTitle?: string;
+  bookAuthor?: string;
+  bookCoverColor?: string;
+  bookEmoji?: string;
+  memberId?: string;
+  borrowerAvatar?: string;
+  borrowerGender?: Gender;
+  borrowDate?: string;
+  dueDate?: string;
 }
 
 export interface Activity {
   id: string;
-  bookTitle: string;
+  book_title: string;
   member: string;
   date: string;
   status: "En cours" | "Retourné" | "En retard";
   type: "Emprunt" | "Retour" | "Avis de retard" | "Nouvelle inscription";
+
+  // Alias camelCase pour rétro-compatibilité
+  bookTitle?: string;
 }
 
-export const initialBooks: Book[] = [
+const rawBooks = [
   {
     id: "BK-001",
     title: "Le Seigneur des Anneaux",
@@ -224,7 +266,15 @@ export const initialBooks: Book[] = [
   },
 ];
 
-export const initialMembers: Member[] = [
+export const initialBooks: Book[] = (rawBooks as any[]).map((b) => ({
+  ...b,
+  cover_color: b.coverColor,
+  cover_accent: b.coverAccent,
+  cover_emoji: b.coverEmoji,
+  publication_year: b.year,
+}));
+
+const rawMembers = [
   {
     id: "MEM-001",
     name: "Sarah Connor",
@@ -307,7 +357,15 @@ export const initialMembers: Member[] = [
   },
 ];
 
-export const initialLoans: Loan[] = [
+export const initialMembers: Member[] = (rawMembers as any[]).map((m) => ({
+  ...m,
+  created_at: m.joinDate,
+  active_loans_count: m.borrowedCount,
+  borrowed_count: m.borrowedCount,
+  is_active: true,
+}));
+
+const rawLoans = [
   {
     id: "EMP001",
     bookId: "BK-002",
@@ -380,7 +438,22 @@ export const initialLoans: Loan[] = [
   },
 ];
 
-export const initialActivities: Activity[] = [
+export const initialLoans: Loan[] = (rawLoans as any[]).map((l) => ({
+  ...l,
+  book_id: l.bookId,
+  book_title: l.bookTitle,
+  book_author: l.bookAuthor,
+  book_cover_color: l.bookCoverColor,
+  book_emoji: l.bookEmoji,
+  member_id: l.memberId,
+  user_id: l.memberId,
+  borrow_date: l.borrowDate,
+  due_date: l.dueDate,
+  return_due_date: l.dueDate,
+  borrower_avatar: l.borrowerAvatar,
+}));
+
+const rawActivities = [
   {
     id: "ACT001",
     bookTitle: "Le Petit Prince",
@@ -422,6 +495,11 @@ export const initialActivities: Activity[] = [
     type: "Retour",
   },
 ];
+
+export const initialActivities: Activity[] = (rawActivities as any[]).map((a) => ({
+  ...a,
+  book_title: a.bookTitle,
+}));
 
 export interface Kpi {
   id: string;
@@ -573,21 +651,36 @@ export function describeDueDate(dueDate: string) {
 
 export interface ActiveLoan {
   id: string;
-  bookId: string;
-  bookTitle: string;
-  bookAuthor: string;
+  book_id: string;
+  book_title: string;
+  book_author: string;
   category?: string;
-  coverColor: string;
-  coverEmoji: string;
-  memberId: string;
+  cover_color?: string;
+  cover_emoji?: string;
+  member_id: string;
+  user_id?: string;
   borrower: string;
-  borrowerInitials: string;
+  borrower_name?: string;
+  borrower_initials?: string;
+  borrower_gender?: Gender;
+  borrow_date: string;
+  due_date: string;
+  return_due_date?: string;
+
+  // Aliases camelCase pour rétro-compatibilité
+  bookId?: string;
+  bookTitle?: string;
+  bookAuthor?: string;
+  coverColor?: string;
+  coverEmoji?: string;
+  memberId?: string;
+  borrowerInitials?: string;
   borrowerGender?: Gender;
-  borrowDate: string;
-  dueDate: string;
+  borrowDate?: string;
+  dueDate?: string;
 }
 
-export const activeLoans: ActiveLoan[] = [
+const rawActiveLoans = [
   {
     id: "LN-2041",
     bookId: "BK-005",
@@ -695,6 +788,22 @@ export const activeLoans: ActiveLoan[] = [
   },
 ];
 
+export const activeLoans: ActiveLoan[] = (rawActiveLoans as any[]).map((l) => ({
+  ...l,
+  book_id: l.bookId,
+  book_title: l.bookTitle,
+  book_author: l.bookAuthor,
+  cover_color: l.coverColor,
+  cover_emoji: l.coverEmoji,
+  member_id: l.memberId,
+  user_id: l.memberId,
+  borrower_initials: l.borrowerInitials,
+  borrower_gender: l.borrowerGender,
+  borrow_date: l.borrowDate,
+  due_date: l.dueDate,
+  return_due_date: l.dueDate,
+}));
+
 export const currentUser = {
   name: "Sarah Connor",
   email: "sarah.connor@agbale.app",
@@ -741,12 +850,15 @@ export interface ActivityEntry {
   id: string;
   member: string;
   action: "Emprunté" | "Retourné" | "Renouvelé" | "Inscrit" | "Signalé en retard";
-  bookTitle: string;
+  book_title: string;
   time: string;
   status: "En cours" | "Retourné" | "En retard" | "Nouveau membre";
+
+  // Alias camelCase
+  bookTitle?: string;
 }
 
-export const dashboardActivities: ActivityEntry[] = [
+const rawDashboardActivities = [
   {
     id: "ACT-101",
     member: "Emily Chen",
@@ -796,6 +908,11 @@ export const dashboardActivities: ActivityEntry[] = [
     status: "Nouveau membre",
   },
 ];
+
+export const dashboardActivities: ActivityEntry[] = (rawDashboardActivities as any[]).map((a) => ({
+  ...a,
+  book_title: a.bookTitle,
+}));
 
 export const books = initialBooks;
 export const members = initialMembers;

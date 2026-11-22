@@ -7,7 +7,14 @@ const STORAGE_KEY_MAX_BOOKS = "agbale:max-borrowed-books";
 export const DEFAULT_ESTABLISHMENT_NAME =
   (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_ORGANIZATION_NAME) ||
   "Bibliothèque Centrale";
-export const DEFAULT_MAX_BOOKS = 5;
+
+const envMaxBooks =
+  typeof process !== "undefined" && process.env?.NEXT_PUBLIC_DEFAULT_MAX_BOOKS
+    ? Number.parseInt(process.env.NEXT_PUBLIC_DEFAULT_MAX_BOOKS, 10)
+    : NaN;
+
+export const DEFAULT_MAX_BOOKS =
+  !Number.isNaN(envMaxBooks) && envMaxBooks > 0 ? envMaxBooks : 5;
 
 function subscribe(callback: () => void) {
   if (typeof window === "undefined") return () => {};

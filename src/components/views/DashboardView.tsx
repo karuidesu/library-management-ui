@@ -166,7 +166,7 @@ export function DashboardView() {
                   <Td className="text-slate-600 dark:text-[#94A3B8]">{activity.action}</Td>
                   <Td className="max-w-[16rem]">
                     <span className="block truncate font-medium text-slate-900 dark:text-[#F3F4F6]">
-                      {activity.bookTitle}
+                      {activity.book_title || activity.bookTitle}
                     </span>
                   </Td>
                   <Td className="whitespace-nowrap text-sm text-slate-500 dark:text-[#94A3B8]">
@@ -217,7 +217,7 @@ export function DashboardView() {
                   </Badge>
                 </div>
                 <p className="mt-0.5 truncate text-sm text-slate-600 dark:text-[#94A3B8]">
-                  {activity.action} &middot; {activity.bookTitle}
+                  {activity.action} &middot; {activity.book_title || activity.bookTitle}
                 </p>
                 <p className="mt-1 text-xs text-slate-400 dark:text-[#64748B]">{activity.time}</p>
               </div>

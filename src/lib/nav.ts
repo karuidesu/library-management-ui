@@ -8,7 +8,9 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
-export const APP_NAME = "Agbale";
+export const APP_NAME =
+  (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_APP_NAME) ||
+  "Agbale";
 
 export interface NavItem {
   href: string;
