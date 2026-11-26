@@ -1,8 +1,9 @@
 "use client";
 
 import * as React from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { usePersistentFlag } from "@/hooks/useClientState";
+import { useAuth } from "@/hooks/useAuth";
 import { Header } from "./Header";
 import { Sidebar } from "./Sidebar";
 
@@ -26,6 +27,8 @@ const COLLAPSE_KEY = "agbale:sidebar-collapsed";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const { isAuthenticated } = useAuth();
   const [collapsed, setCollapsed] = usePersistentFlag(COLLAPSE_KEY, false);
   const [drawerOpen, setDrawerOpen] = React.useState(false);
 
@@ -42,6 +45,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     setLastPathname(pathname);
     if (drawerOpen) setDrawerOpen(false);
   }
+
+  // Rediriger automatiquement un utilisateur déjà connecté sur /login vers /dashboard
+  React.useEffect(() => {
+    if (pathname === "/login" && isAuthenticated) {
+      router.push("/dashboard");
+    }
+  }, [pathname, isAuthenticated, router]);
 
   const value = React.useMemo(
     () => ({
@@ -64,7 +74,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <ShellContext.Provider value={value}>
-
       <a
         href="#main-content"
         className="sr-only-focusable focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[60] focus:h-auto focus:w-auto focus:rounded-lg focus:bg-brand-600 focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-white focus:[clip-path:none]"

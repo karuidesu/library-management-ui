@@ -20,6 +20,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { useLibrarySettings } from "@/hooks/useLibrarySettings";
+import { useAuth } from "@/hooks/useAuth";
 import { currentUser } from "@/lib/data";
 
 export interface SystemReportModalProps {
@@ -347,7 +348,12 @@ const mockReportData = {
   ],
 };
 
-function generateCsvReport(establishment: string, meta: ReportMeta): string {
+function generateCsvReport(
+  establishment: string,
+  meta: ReportMeta,
+  operatorName: string = currentUser.name,
+  operatorRole: string = currentUser.role,
+): string {
   const d = mockReportData;
   const lines: string[] = [];
 
@@ -356,8 +362,8 @@ function generateCsvReport(establishment: string, meta: ReportMeta): string {
   lines.push(`"Etablissement","${establishment}"`);
   lines.push(`"Periode","${meta.periodLabel}"`);
   lines.push(`"Date de generation","${meta.generatedAt}"`);
-  lines.push(`"Genere par","${currentUser.name} (${currentUser.role})"`);
-  lines.push(`"Operateur responsable","${currentUser.name} (${currentUser.role})"`);
+  lines.push(`"Genere par","${operatorName} (${operatorRole})"`);
+  lines.push(`"Operateur responsable","${operatorName} (${operatorRole})"`);
   lines.push("");
 
   lines.push('"--- SYNTHESE EXECUTIVE (30 DERNIERS JOURS) ---"');
@@ -406,6 +412,7 @@ function generateCsvReport(establishment: string, meta: ReportMeta): string {
 
 export function SystemReportModal({ open, onClose }: SystemReportModalProps) {
   const { establishmentName } = useLibrarySettings();
+  const { user, roleName } = useAuth();
   const [downloadingCsv, setDownloadingCsv] = React.useState(false);
   const [reportMeta, setReportMeta] = React.useState<ReportMeta>(DEFAULT_REPORT_META);
   const data = mockReportData;
@@ -442,7 +449,7 @@ export function SystemReportModal({ open, onClose }: SystemReportModalProps) {
       setDownloadingCsv(true);
       const meta = getCurrentReportMeta();
       setReportMeta(meta);
-      const csv = generateCsvReport(establishmentName, meta);
+      const csv = generateCsvReport(establishmentName, meta, user.name, roleName);
       const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
@@ -480,7 +487,7 @@ export function SystemReportModal({ open, onClose }: SystemReportModalProps) {
               </strong>{" "}
               &middot; Généré par{" "}
               <strong className="font-semibold text-slate-700 dark:text-slate-300">
-                {currentUser.name}
+                {user.name}
               </strong>
             </span>
           </div>
@@ -578,11 +585,11 @@ export function SystemReportModal({ open, onClose }: SystemReportModalProps) {
                   </p>
                   <p className="flex justify-between gap-2">
                     <span className="font-semibold text-slate-900 dark:text-[#F3F4F6]">Généré par :</span>
-                    <span className="font-semibold text-slate-900 dark:text-[#F3F4F6]">{currentUser.name}</span>
+                    <span className="font-semibold text-slate-900 dark:text-[#F3F4F6]">{user.name}</span>
                   </p>
                   <p className="flex justify-between gap-2">
                     <span className="font-semibold text-slate-900 dark:text-[#F3F4F6]">Rôle :</span>
-                    <span>{currentUser.role}</span>
+                    <span>{roleName}</span>
                   </p>
                 </div>
               </div>
@@ -936,11 +943,11 @@ export function SystemReportModal({ open, onClose }: SystemReportModalProps) {
                   Agbale &middot; {establishmentName} &middot; Certificat d&apos;intégrité des données
                 </p>
                 <p className="mt-0.5 text-[0.6875rem] text-slate-400">
-                  Rapport édité sous le contrôle de {currentUser.name} ({currentUser.role}) pour {establishmentName}.
+                  Rapport édité sous le contrôle de {user.name} ({roleName}) pour {establishmentName}.
                 </p>
               </div>
               <div className="text-right text-[0.6875rem] text-slate-400">
-                Document certifié &middot; Page 1/1 &middot; Rapport {reportMeta.reportId} &middot; {establishmentName} &middot; Généré par {currentUser.name}
+                Document certifié &middot; Page 1/1 &middot; Rapport {reportMeta.reportId} &middot; {establishmentName} &middot; Généré par {user.name}
               </div>
             </div>
           </footer>

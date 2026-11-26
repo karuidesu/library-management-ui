@@ -19,6 +19,7 @@ import { Checkbox, Field, Input, Select } from "@/components/ui/Field";
 import { PageContainer, PageHeader } from "@/components/ui/Page";
 import { useTheme } from "@/hooks/useTheme";
 import { useLibrarySettings } from "@/hooks/useLibrarySettings";
+import { useAuth } from "@/hooks/useAuth";
 import { currentUser, loanDurations } from "@/lib/data";
 
 const sections = [
@@ -61,6 +62,24 @@ function ToggleRow({
 }
 
 function ProfileSection() {
+  const { user, roleName, updateUser } = useAuth();
+  const [name, setName] = React.useState(user.name);
+  const [phone, setPhone] = React.useState(user.phone || "");
+  const [email, setEmail] = React.useState(user.email || "");
+  const [feedback, setFeedback] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    setName(user.name);
+    setPhone(user.phone || "");
+    setEmail(user.email || "");
+  }, [user]);
+
+  const handleSave = () => {
+    updateUser({ name: name.trim(), phone: phone.trim() });
+    setFeedback("Profil mis à jour avec succès.");
+    setTimeout(() => setFeedback(null), 3000);
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -73,19 +92,26 @@ function ProfileSection() {
       </CardHeader>
 
       <div className="space-y-6 p-6 sm:p-8">
+        {feedback && (
+          <div className="flex items-center gap-2 rounded-xl bg-emerald-50 p-3 text-xs font-medium text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
+            <Check className="size-4 shrink-0" />
+            <span>{feedback}</span>
+          </div>
+        )}
+
         <div className="flex flex-wrap items-center gap-5">
           <Avatar
-            name={currentUser.name}
-            gender={currentUser.gender}
+            name={user.name}
+            gender={user.gender}
             size="xl"
             className="size-16 text-lg"
           />
           <div className="min-w-0">
             <p className="font-semibold text-slate-900 dark:text-[#F3F4F6]">
-              {currentUser.name}
+              {user.name}
             </p>
             <p className="text-sm text-slate-500 dark:text-[#94A3B8]">
-              {currentUser.role}
+              {roleName}
             </p>
           </div>
         </div>
@@ -93,7 +119,11 @@ function ProfileSection() {
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
           <div className="space-y-5">
             <Field label="Nom complet" htmlFor="settings-name">
-              <Input id="settings-name" defaultValue={currentUser.name} />
+              <Input
+                id="settings-name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
             </Field>
             <Field
               label="Numéro de téléphone"
@@ -103,7 +133,8 @@ function ProfileSection() {
               <Input
                 id="settings-phone"
                 type="tel"
-                defaultValue={currentUser.phone}
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
                 placeholder="+229 97 00 12 34"
               />
             </Field>
@@ -114,7 +145,9 @@ function ProfileSection() {
               <Input
                 id="settings-email"
                 type="email"
-                defaultValue={currentUser.email}
+                value={email}
+                disabled
+                readOnly
               />
             </Field>
             <Field
@@ -124,12 +157,18 @@ function ProfileSection() {
             >
               <Input
                 id="settings-role"
-                value={currentUser.role}
+                value={roleName}
                 disabled
                 readOnly
               />
             </Field>
           </div>
+        </div>
+
+        <div className="flex justify-end pt-2">
+          <Button onClick={handleSave}>
+            Enregistrer le profil
+          </Button>
         </div>
       </div>
     </Card>

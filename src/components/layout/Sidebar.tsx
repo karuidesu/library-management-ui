@@ -8,9 +8,9 @@ import { cn } from "@/lib/cn";
 import { APP_NAME, mainNavItems, settingsNavItem, type NavItem } from "@/lib/nav";
 import { useFocusTrap, useEscapeKey, useScrollLock } from "@/hooks/useFocusTrap";
 import { useLibrarySettings } from "@/hooks/useLibrarySettings";
+import { useAuth } from "@/hooks/useAuth";
 import { useShell } from "./AppShell";
 import { Avatar } from "@/components/ui/Avatar";
-import { currentUser } from "@/lib/data";
 
 function NavLink({
   item,
@@ -106,12 +106,15 @@ function Brand({ collapsed }: { collapsed: boolean }) {
 }
 
 function SignOut({ collapsed }: { collapsed: boolean }) {
+  const { logout } = useAuth();
+
   return (
-    <Link
-      href="/login"
+    <button
+      type="button"
+      onClick={logout}
       title={collapsed ? "Se déconnecter" : undefined}
       className={cn(
-        "flex min-h-11 items-center gap-3 rounded-xl text-sm font-medium text-slate-600 dark:text-[#94A3B8]",
+        "flex w-full min-h-11 items-center gap-3 rounded-xl text-sm font-medium text-slate-600 dark:text-[#94A3B8]",
         "outline-none transition-colors hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/40 dark:hover:text-rose-400",
         "focus-visible:ring-4 focus-visible:ring-rose-600/20",
         collapsed ? "justify-center px-0" : "px-3.5",
@@ -123,13 +126,14 @@ function SignOut({ collapsed }: { collapsed: boolean }) {
       ) : (
         <span className="truncate">Se déconnecter</span>
       )}
-    </Link>
+    </button>
   );
 }
 
 export function Sidebar() {
   const pathname = usePathname();
   const { collapsed, toggleCollapsed, drawerOpen, closeDrawer } = useShell();
+  const { user, roleName } = useAuth();
   const drawerRef = React.useRef<HTMLDivElement>(null);
 
   useEscapeKey(drawerOpen, closeDrawer);
@@ -248,16 +252,16 @@ export function Sidebar() {
             />
             <div className="my-2 flex items-center gap-3 rounded-xl bg-slate-50 dark:bg-[#171E31] dark:border dark:border-[#212B44] px-3 py-2.5">
               <Avatar
-                name={currentUser.name}
-                gender={currentUser.gender}
+                name={user.name}
+                gender={user.gender}
                 size="md"
               />
               <span className="min-w-0">
                 <span className="block truncate text-sm font-semibold text-slate-900 dark:text-[#F3F4F6]">
-                  {currentUser.name}
+                  {user.name}
                 </span>
                 <span className="block truncate text-xs text-slate-500 dark:text-[#94A3B8]">
-                  {currentUser.role}
+                  {roleName}
                 </span>
               </span>
             </div>
@@ -268,7 +272,6 @@ export function Sidebar() {
     </>
   );
 }
-
 
 export function SidebarTrigger() {
   const { openDrawer } = useShell();

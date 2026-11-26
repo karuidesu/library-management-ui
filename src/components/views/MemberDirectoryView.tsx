@@ -2,6 +2,8 @@
 
 import * as React from "react";
 import {
+  CheckCircle2,
+  Loader2,
   Pencil,
   Plus,
   Search,
@@ -9,6 +11,7 @@ import {
   SlidersHorizontal,
   UserMinus,
   Users,
+  AlertCircle,
 } from "lucide-react";
 import { Badge, roleTone } from "@/components/ui/Badge";
 import { Avatar } from "@/components/ui/Avatar";
@@ -27,6 +30,7 @@ import {
 } from "@/components/ui/Page";
 import { useLibrarySettings } from "@/hooks/useLibrarySettings";
 import { initialMembers, libraryStats, REFERENCE_DATE, type Member } from "@/lib/data";
+import { memberService } from "@/services/memberService";
 
 const PAGE_SIZE = 6;
 const roles: Member["role"][] = ["Admin", "Bibliothécaire", "Membre"];
@@ -42,6 +46,52 @@ function formatJoinDate(iso: string) {
   return Number.isNaN(date.getTime()) ? iso : dateFormatter.format(date);
 }
 
+function normalizeMember(raw: any): Member {
+  const name = raw.name || raw.username || raw.full_name || raw.email || "Membre";
+  const initials =
+    raw.avatar ||
+    name
+      .split(" ")
+      .map((p: string) => p[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2) || (raw.gender === "M" ? "M" : "F");
+
+  let role: Member["role"] = "Membre";
+  if (raw.role) {
+    if (typeof raw.role === "string") {
+      role = raw.role;
+    } else if (typeof raw.role === "object" && raw.role.name) {
+      role = raw.role.name;
+    }
+  } else if (raw.role_id === 1) {
+    role = "Admin";
+  } else if (raw.role_id === 2) {
+    role = "Bibliothécaire";
+  }
+
+  const loansCount =
+    raw.active_loans_count ??
+    raw.borrowedCount ??
+    raw.borrowed_count ??
+    0;
+
+  return {
+    ...raw,
+    id: String(raw.id),
+    name,
+    email: raw.email || undefined,
+    gender: raw.gender === "M" ? "M" : "F",
+    role,
+    created_at: raw.created_at || raw.joinDate || REFERENCE_DATE,
+    joinDate: raw.joinDate || raw.created_at || REFERENCE_DATE,
+    avatar: initials,
+    active_loans_count: loansCount,
+    borrowedCount: loansCount,
+    is_active: raw.is_active ?? true,
+  };
+}
+
 function EditMemberForm({
   member,
   onClose,
@@ -49,29 +99,49 @@ function EditMemberForm({
 }: {
   member: Member;
   onClose: () => void;
-  onSave: (updated: Member) => void;
+  onSave: (updated: Member) => Promise<void>;
 }) {
   const [name, setName] = React.useState(member.name);
   const [email, setEmail] = React.useState(member.email || "");
   const [gender, setGender] = React.useState<Member["gender"]>(member.gender || "F");
   const [role, setRole] = React.useState<Member["role"]>(member.role);
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
 
-  const handleSubmit = (e?: React.FormEvent) => {
+  const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!name.trim()) return;
+    if (!name.trim()) {
+      setError("Le nom complet est obligatoire.");
+      return;
+    }
 
-    onSave({
-      ...member,
-      name: name.trim(),
-      email: email.trim() || undefined,
-      gender,
-      role,
-    });
-    onClose();
+    try {
+      setIsSubmitting(true);
+      setError(null);
+      await onSave({
+        ...member,
+        name: name.trim(),
+        email: email.trim() || undefined,
+        gender,
+        role,
+      });
+      onClose();
+    } catch (err: any) {
+      setError(err?.message || "Impossible de sauvegarder le membre.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {error && (
+        <div className="flex items-center gap-2 rounded-xl bg-rose-50 p-3 text-xs font-medium text-rose-700 dark:bg-rose-950/40 dark:text-rose-300">
+          <AlertCircle className="size-4 shrink-0" />
+          <span>{error}</span>
+        </div>
+      )}
+
       <Field label="Nom complet" htmlFor="edit-member-name" required>
         <Input
           id="edit-member-name"
@@ -101,27 +171,38 @@ function EditMemberForm({
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="Optionnel pour les enfants"
+            placeholder="usager@domaine.fr"
           />
         </Field>
       </div>
-      <Field label="Rôle dans la bibliothèque" htmlFor="edit-member-role" required>
+
+      <Field label="Rôle d'accès" htmlFor="edit-member-role" required>
         <Select
           id="edit-member-role"
           value={role}
           onChange={(e) => setRole(e.target.value as Member["role"])}
         >
-          <option value="Membre">Membre standard</option>
-          <option value="Bibliothécaire">Bibliothécaire</option>
-          <option value="Admin">Administrateur</option>
+          {roles.map((r) => (
+            <option key={r} value={r}>
+              {r}
+            </option>
+          ))}
         </Select>
       </Field>
-      <div className="flex justify-end gap-3 pt-3">
-        <Button variant="ghost" onClick={onClose} className="sm:w-auto">
+
+      <div className="flex flex-col-reverse gap-3 pt-4 sm:flex-row sm:items-center sm:justify-end">
+        <Button variant="ghost" onClick={onClose} disabled={isSubmitting} className="sm:w-auto">
           Annuler
         </Button>
-        <Button type="submit" disabled={!name.trim()} className="sm:w-auto">
-          Enregistrer les modifications
+        <Button type="submit" disabled={isSubmitting || !name.trim()} className="sm:w-auto">
+          {isSubmitting ? (
+            <>
+              <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+              Sauvegarde...
+            </>
+          ) : (
+            "Enregistrer les modifications"
+          )}
         </Button>
       </div>
     </form>
@@ -137,7 +218,7 @@ function EditMemberModal({
   member: Member | null;
   open: boolean;
   onClose: () => void;
-  onSave: (updated: Member) => void;
+  onSave: (updated: Member) => Promise<void>;
 }) {
   if (!member) return null;
 
@@ -145,8 +226,8 @@ function EditMemberModal({
     <Modal
       open={open}
       onClose={onClose}
-      title="Modifier l'usager"
-      description={`Mettre à jour les privilèges et coordonnées de ${member.name}.`}
+      title="Modifier la fiche adhérent"
+      description={`Mise à jour des coordonnées pour ${member.name}.`}
     >
       <EditMemberForm
         key={member.id}
@@ -165,44 +246,41 @@ function RegisterMemberModal({
 }: {
   open: boolean;
   onClose: () => void;
-  onRegister: (member: Member) => void;
+  onRegister: (member: Partial<Member>) => Promise<void>;
 }) {
   const [name, setName] = React.useState("");
   const [email, setEmail] = React.useState("");
   const [gender, setGender] = React.useState<Member["gender"]>("F");
   const [role, setRole] = React.useState<Member["role"]>("Membre");
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
 
-  const handleSubmit = (e?: React.FormEvent) => {
+  const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!name.trim()) return;
+    if (!name.trim()) {
+      setError("Le nom complet est obligatoire.");
+      return;
+    }
 
-    const initials =
-      name
-        .split(" ")
-        .map((p) => p[0])
-        .join("")
-        .toUpperCase()
-        .slice(0, 2) || (gender === "F" ? "F" : "M");
-
-    const newMember: Member = {
-      id: `MEM-${Math.floor(Math.random() * 9000 + 1000)}`,
-      name: name.trim(),
-      email: email.trim() || undefined,
-      gender,
-      role,
-      created_at: REFERENCE_DATE,
-      joinDate: REFERENCE_DATE,
-      avatar: initials,
-      active_loans_count: 0,
-      borrowedCount: 0,
-    };
-
-    onRegister(newMember);
-    setName("");
-    setEmail("");
-    setGender("F");
-    setRole("Membre");
-    onClose();
+    try {
+      setIsSubmitting(true);
+      setError(null);
+      await onRegister({
+        name: name.trim(),
+        email: email.trim() || undefined,
+        gender,
+        role,
+      });
+      setName("");
+      setEmail("");
+      setGender("F");
+      setRole("Membre");
+      onClose();
+    } catch (err: any) {
+      setError(err?.message || "Impossible d'inscrire le membre.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -213,24 +291,38 @@ function RegisterMemberModal({
       description="Création d'une fiche d'adhérent dans la base du personnel."
       footer={
         <>
-          <Button variant="ghost" onClick={onClose} className="sm:w-auto">
+          <Button variant="ghost" onClick={onClose} disabled={isSubmitting} className="sm:w-auto">
             Annuler
           </Button>
           <Button
             onClick={() => handleSubmit()}
-            disabled={!name.trim()}
+            disabled={isSubmitting || !name.trim()}
             className="sm:w-auto"
           >
-            Inscrire l&apos;usager
+            {isSubmitting ? (
+              <>
+                <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                Inscription...
+              </>
+            ) : (
+              "Inscrire l'usager"
+            )}
           </Button>
         </>
       }
     >
       <form onSubmit={handleSubmit} className="space-y-4">
+        {error && (
+          <div className="flex items-center gap-2 rounded-xl bg-rose-50 p-3 text-xs font-medium text-rose-700 dark:bg-rose-950/40 dark:text-rose-300">
+            <AlertCircle className="size-4 shrink-0" />
+            <span>{error}</span>
+          </div>
+        )}
+
         <Field label="Nom complet" htmlFor="new-member-name" required>
           <Input
             id="new-member-name"
-            placeholder=" Marguerite Duras ou Léo Martin"
+            placeholder="Marguerite Duras ou Léo Martin"
             value={name}
             onChange={(e) => setName(e.target.value)}
             data-autofocus
@@ -243,7 +335,7 @@ function RegisterMemberModal({
               value={gender}
               onChange={(e) => setGender(e.target.value as Member["gender"])}
             >
-              <option value="F">Feminin</option>
+              <option value="F">Féminin</option>
               <option value="M">Masculin</option>
             </Select>
           </Field>
@@ -253,21 +345,23 @@ function RegisterMemberModal({
               value={role}
               onChange={(e) => setRole(e.target.value as Member["role"])}
             >
-              <option value="Membre">Membre standard</option>
-              <option value="Bibliothécaire">Bibliothécaire</option>
-              <option value="Admin">Administrateur</option>
+              {roles.map((r) => (
+                <option key={r} value={r}>
+                  {r}
+                </option>
+              ))}
             </Select>
           </Field>
         </div>
         <Field
           label="Adresse e-mail"
           htmlFor="new-member-email"
-          hint="Non obligatoire, notamment pour les enfants ou usagers sans boîte mail."
+          hint="Optionnel pour les enfants."
         >
           <Input
             id="new-member-email"
             type="email"
-            placeholder=" adresse@gmail.com"
+            placeholder="m.duras@agbale.org"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
@@ -279,30 +373,133 @@ function RegisterMemberModal({
 
 export function MemberDirectoryView() {
   const { maxBooks } = useLibrarySettings();
-  const [members, setMembers] = React.useState<Member[]>(initialMembers);
+  const [members, setMembers] = React.useState<Member[]>(() => initialMembers.map(normalizeMember));
+  const [totalCount, setTotalCount] = React.useState(initialMembers.length);
+  const [isLoading, setIsLoading] = React.useState(false);
+  const [feedbackMessage, setFeedbackMessage] = React.useState<string | null>(null);
+
   const [query, setQuery] = React.useState("");
   const [role, setRole] = React.useState("all");
   const [page, setPage] = React.useState(1);
   const [editingMember, setEditingMember] = React.useState<Member | null>(null);
   const [showRegisterModal, setShowRegisterModal] = React.useState(false);
 
-  const filtered = React.useMemo(() => {
-    const needle = query.trim().toLowerCase();
-    return members.filter((member) => {
-      const matchesQuery =
-        needle.length === 0 ||
-        member.name.toLowerCase().includes(needle) ||
-        (member.email ? member.email.toLowerCase().includes(needle) : false);
-      return matchesQuery && (role === "all" || member.role === role);
-    });
-  }, [members, query, role]);
+  const showNotification = (msg: string) => {
+    setFeedbackMessage(msg);
+    setTimeout(() => setFeedbackMessage(null), 4000);
+  };
 
-  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const loadMembers = React.useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const res = await memberService.getMembersPaginated({
+        search: query.trim() || undefined,
+        role: role !== "all" ? role : undefined,
+        limit: PAGE_SIZE,
+        offset: (page - 1) * PAGE_SIZE,
+      });
+
+      if (res && Array.isArray(res.items)) {
+        const normalized = res.items.map(normalizeMember);
+        setMembers(normalized);
+        setTotalCount(res.total ?? normalized.length);
+        return;
+      }
+    } catch {
+      // Local fallback
+      const needle = query.trim().toLowerCase();
+      const filtered = initialMembers.filter((m) => {
+        const matchesQuery =
+          needle.length === 0 ||
+          m.name.toLowerCase().includes(needle) ||
+          (m.email && m.email.toLowerCase().includes(needle));
+        const matchesRole = role === "all" || m.role === role;
+        return matchesQuery && matchesRole;
+      });
+      setMembers(filtered.map(normalizeMember));
+      setTotalCount(filtered.length);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [query, role, page]);
+
+  React.useEffect(() => {
+    loadMembers();
+  }, [loadMembers]);
+
+  const handleRegister = async (data: Partial<Member>) => {
+    try {
+      const created = await memberService.createMember(data);
+      const normalized = normalizeMember(created);
+      setMembers((prev) => [normalized, ...prev]);
+      setTotalCount((c) => c + 1);
+      showNotification(`Le membre « ${normalized.name} » a été inscrit.`);
+    } catch {
+      const initials =
+        (data.name || "MB")
+          .split(" ")
+          .map((p) => p[0])
+          .join("")
+          .toUpperCase()
+          .slice(0, 2);
+
+      const localMember: Member = normalizeMember({
+        ...data,
+        id: `MEM-${Math.floor(Math.random() * 9000 + 1000)}`,
+        created_at: REFERENCE_DATE,
+        joinDate: REFERENCE_DATE,
+        avatar: initials,
+        active_loans_count: 0,
+        borrowedCount: 0,
+      });
+
+      setMembers((prev) => [localMember, ...prev]);
+      setTotalCount((c) => c + 1);
+      showNotification(`Le membre « ${localMember.name} » a été inscrit localement.`);
+    }
+  };
+
+  const handleSaveMember = async (updated: Member) => {
+    try {
+      await memberService.updateMember(updated.id, updated);
+      setMembers((prev) => prev.map((m) => (m.id === updated.id ? updated : m)));
+      showNotification(`Coordonnées de « ${updated.name} » mises à jour.`);
+    } catch {
+      setMembers((prev) => prev.map((m) => (m.id === updated.id ? updated : m)));
+      showNotification(`Coordonnées de « ${updated.name} » mises à jour localement.`);
+    }
+  };
+
+  const handleToggleRole = async (id: string) => {
+    const target = members.find((m) => m.id === id);
+    if (!target) return;
+    const newRole: Member["role"] =
+      target.role === "Membre" ? "Bibliothécaire" : "Membre";
+
+    try {
+      await memberService.updateMember(id, { role: newRole });
+      setMembers((prev) =>
+        prev.map((m) => (m.id === id ? { ...m, role: newRole } : m)),
+      );
+      showNotification(`Le rôle de ${target.name} a été changé en « ${newRole} ».`);
+    } catch {
+      setMembers((prev) =>
+        prev.map((m) => (m.id === id ? { ...m, role: newRole } : m)),
+      );
+      showNotification(`Rôle modifié localement en « ${newRole} ».`);
+    }
+  };
+
+  const visible = React.useMemo(() => {
+    if (members.length <= PAGE_SIZE) {
+      return members;
+    }
+    const safePage = Math.min(page, Math.max(1, Math.ceil(members.length / PAGE_SIZE)));
+    return members.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+  }, [members, page]);
+
+  const pageCount = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
   const safePage = Math.min(page, pageCount);
-  const visible = filtered.slice(
-    (safePage - 1) * PAGE_SIZE,
-    safePage * PAGE_SIZE,
-  );
 
   const resetFilters = () => {
     setQuery("");
@@ -310,32 +507,11 @@ export function MemberDirectoryView() {
     setPage(1);
   };
 
-  const handleToggleRole = (id: string) => {
-    setMembers((current) =>
-      current.map((m) => {
-        if (m.id !== id) return m;
-        const newRole: Member["role"] =
-          m.role === "Membre" ? "Bibliothécaire" : "Membre";
-        return { ...m, role: newRole };
-      }),
-    );
-  };
-
-  const handleSaveMember = (updated: Member) => {
-    setMembers((current) =>
-      current.map((m) => (m.id === updated.id ? updated : m)),
-    );
-  };
-
-  const handleRegister = (newMember: Member) => {
-    setMembers((current) => [newMember, ...current]);
-  };
-
   return (
     <PageContainer>
       <PageHeader
         title="Répertoire des membres"
-        description={`${libraryStats.activeMembers.toLocaleString("fr-FR")} membres inscrits dans l'ensemble des registres.`}
+        description={`${totalCount.toLocaleString("fr-FR")} membres inscrits dans l'ensemble des registres.`}
         actions={
           <Button onClick={() => setShowRegisterModal(true)}>
             <Plus className="size-[1.125rem]" aria-hidden="true" />
@@ -343,6 +519,13 @@ export function MemberDirectoryView() {
           </Button>
         }
       />
+
+      {feedbackMessage && (
+        <div className="mb-4 flex items-center gap-2.5 rounded-xl border border-emerald-200 bg-emerald-50/90 px-4 py-3 text-sm font-medium text-emerald-800 dark:border-emerald-800/40 dark:bg-emerald-950/40 dark:text-emerald-300 animate-in fade-in duration-200">
+          <CheckCircle2 className="size-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
+          <span>{feedbackMessage}</span>
+        </div>
+      )}
 
       <Card className="mb-6 p-4">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_12rem]">
@@ -378,7 +561,14 @@ export function MemberDirectoryView() {
       </Card>
 
       <Card>
-        {filtered.length === 0 ? (
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center py-20 text-slate-400">
+            <Loader2 className="size-8 animate-spin text-brand-600 dark:text-blue-400" />
+            <p className="mt-3 text-sm font-medium text-slate-500 dark:text-slate-400">
+              Chargement des membres...
+            </p>
+          </div>
+        ) : visible.length === 0 ? (
           <EmptyState
             icon={Users}
             title="Aucun membre ne correspond à ces filtres"
@@ -563,7 +753,7 @@ export function MemberDirectoryView() {
                 pageCount={pageCount}
                 onPageChange={setPage}
                 className="w-full"
-                summary={`${filtered.length} sur ${members.length} membres affichés`}
+                summary={`${totalCount} membres enregistrés`}
               />
             </CardFooter>
           </>

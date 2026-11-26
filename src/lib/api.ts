@@ -97,6 +97,19 @@ async function request<T>(
   });
 
   if (!response.ok) {
+    // Nettoyer le jeton en cas de 401 (non authentifié / expiré)
+    if (response.status === 401 && typeof window !== "undefined") {
+      setAuthToken(null);
+      try {
+        localStorage.removeItem("agbale:user");
+      } catch {
+        // Storage might be disabled
+      }
+      if (window.location.pathname !== "/login") {
+        window.location.href = "/login?expired=1";
+      }
+    }
+
     let errorData: unknown;
     let errorMessage = `HTTP Error ${response.status}: ${response.statusText}`;
 

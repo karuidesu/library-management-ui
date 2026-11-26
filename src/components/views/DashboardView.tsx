@@ -25,7 +25,19 @@ import {
 } from "@/components/ui/Page";
 import { SystemReportModal } from "@/components/reports/SystemReportModal";
 import { useLibrarySettings } from "@/hooks/useLibrarySettings";
-import { dashboardActivities, initialMembers, kpis } from "@/lib/data";
+import {
+  dashboardActivities as seedActivities,
+  daysUntilDue,
+  formatDate,
+  initialMembers,
+  kpis as seedKpis,
+  libraryStats,
+  REFERENCE_DATE,
+  type ActivityEntry,
+} from "@/lib/data";
+import { bookService } from "@/services/bookService";
+import { memberService } from "@/services/memberService";
+import { loanService } from "@/services/loanService";
 
 const kpiVisuals: Record<string, { icon: LucideIcon; className: string }> = {
   "total-books": {
@@ -57,8 +69,15 @@ function KpiCard({
   id,
   label,
   value,
-}: (typeof kpis)[number]) {
-  const visual = kpiVisuals[id];
+}: {
+  id: string;
+  label: string;
+  value: number;
+}) {
+  const visual = kpiVisuals[id] ?? {
+    icon: BookOpen,
+    className: "bg-brand-50 text-brand-600 dark:bg-blue-950/60 dark:text-blue-400",
+  };
   const Icon = visual.icon;
 
   return (
@@ -86,6 +105,111 @@ export function DashboardView() {
   const { establishmentName } = useLibrarySettings();
   const [isReportOpen, setIsReportOpen] = React.useState(false);
 
+  const [stats, setStats] = React.useState<{
+    totalBooks: number;
+    activeMembers: number;
+    borrowedBooks: number;
+    overdueReturns: number;
+  }>({
+    totalBooks: libraryStats.totalBooks,
+    activeMembers: libraryStats.activeMembers,
+    borrowedBooks: libraryStats.booksBorrowed,
+    overdueReturns: libraryStats.overdueReturns,
+  });
+
+  const [activities, setActivities] = React.useState<ActivityEntry[]>(seedActivities);
+
+  React.useEffect(() => {
+    async function fetchDashboardData() {
+      try {
+        const [booksRes, membersRes, loansRes] = await Promise.allSettled([
+          bookService.getBooksPaginated({ limit: 10 }),
+          memberService.getMembersPaginated({ limit: 10 }),
+          loanService.getLoansPaginated({ is_active: true, limit: 10 }),
+        ]);
+
+        let totalBooks = Number(libraryStats.totalBooks);
+        let activeMembers = Number(libraryStats.activeMembers);
+        let borrowedBooks = Number(libraryStats.booksBorrowed);
+        let overdueReturns = Number(libraryStats.overdueReturns);
+
+        if (booksRes.status === "fulfilled" && booksRes.value) {
+          const val = booksRes.value;
+          totalBooks = val.total ?? (Array.isArray(val.items) ? val.items.length : 0);
+        }
+
+        if (membersRes.status === "fulfilled" && membersRes.value) {
+          const val = membersRes.value;
+          activeMembers = val.total ?? (Array.isArray(val.items) ? val.items.length : 0);
+        }
+
+        if (loansRes.status === "fulfilled" && loansRes.value) {
+          const val = loansRes.value;
+          const loanItems = Array.isArray(val.items) ? val.items : [];
+          borrowedBooks = val.total ?? loanItems.length;
+          overdueReturns = loanItems.filter((loan) => {
+            const due = loan.due_date || loan.return_due_date || loan.dueDate || "";
+            return daysUntilDue(due) < 0;
+          }).length;
+
+          // Build live activities from loans
+          const liveActs: ActivityEntry[] = loanItems.slice(0, 5).map((l, index) => {
+            const due = l.due_date || l.return_due_date || l.dueDate || "";
+            const isLate = daysUntilDue(due) < 0;
+            const bTitle = l.book_title || l.bookTitle || "Livre";
+            return {
+              id: `ACT-${l.id || index}`,
+              member: l.borrower_name || l.borrower || "Adhérent",
+              action: "Emprunté",
+              book_title: bTitle,
+              bookTitle: bTitle,
+              time: formatDate(l.borrow_date || l.borrowDate || REFERENCE_DATE),
+              status: isLate ? "En retard" : "En cours",
+            };
+          });
+
+          if (liveActs.length > 0) {
+            setActivities(liveActs);
+          }
+        }
+
+        setStats({
+          totalBooks,
+          activeMembers,
+          borrowedBooks,
+          overdueReturns,
+        });
+      } catch {
+        // Fallback to static seed data
+      }
+    }
+
+    fetchDashboardData();
+  }, []);
+
+  const dynamicKpis = [
+    {
+      id: "total-books",
+      label: "Total des livres",
+      value: stats.totalBooks,
+    },
+    {
+      id: "active-members",
+      label: "Membres actifs",
+      value: stats.activeMembers,
+    },
+    {
+      id: "books-borrowed",
+      label: "Livres empruntés",
+      value: stats.borrowedBooks,
+    },
+    {
+      id: "overdue-returns",
+      label: "Retours en retard",
+      value: stats.overdueReturns,
+    },
+  ];
+
   return (
     <PageContainer>
       <PageHeader
@@ -100,7 +224,7 @@ export function DashboardView() {
       />
 
       <div className="mb-6 grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-6 xl:grid-cols-4">
-        {kpis.map((kpi) => (
+        {dynamicKpis.map((kpi) => (
           <KpiCard key={kpi.id} {...kpi} />
         ))}
       </div>
@@ -134,7 +258,7 @@ export function DashboardView() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-[#212B44]">
-              {dashboardActivities.map((activity) => (
+              {activities.map((activity) => (
                 <tr
                   key={activity.id}
                   className="transition-colors hover:bg-slate-50/60 dark:hover:bg-[#1F2A40]/50"
@@ -158,22 +282,22 @@ export function DashboardView() {
                         }
                         size="md"
                       />
-                      <span className="truncate font-semibold text-slate-900 dark:text-[#F3F4F6]">
+                      <span className="font-semibold text-slate-900 dark:text-[#F3F4F6]">
                         {activity.member}
                       </span>
                     </div>
                   </Td>
-                  <Td className="text-slate-600 dark:text-[#94A3B8]">{activity.action}</Td>
-                  <Td className="max-w-[16rem]">
-                    <span className="block truncate font-medium text-slate-900 dark:text-[#F3F4F6]">
-                      {activity.book_title || activity.bookTitle}
-                    </span>
+                  <Td className="text-slate-600 dark:text-[#94A3B8]">
+                    {activity.action === "Emprunté" ? "A emprunté" : activity.action === "Retourné" ? "A retourné" : activity.action}
                   </Td>
-                  <Td className="whitespace-nowrap text-sm text-slate-500 dark:text-[#94A3B8]">
+                  <Td className="font-medium text-slate-900 dark:text-[#F3F4F6]">
+                    {activity.book_title || activity.bookTitle}
+                  </Td>
+                  <Td className="whitespace-nowrap text-sm text-slate-500 dark:text-[#64748B]">
                     {activity.time}
                   </Td>
                   <Td className="px-6 text-right lg:px-8">
-                    <Badge tone={activityTone[activity.status]} dot>
+                    <Badge tone={activityTone[activity.status]}>
                       {activity.status}
                     </Badge>
                   </Td>
@@ -184,7 +308,7 @@ export function DashboardView() {
         </TableScroll>
 
         <ul className="divide-y divide-slate-100 dark:divide-[#212B44] md:hidden">
-          {dashboardActivities.map((activity) => (
+          {activities.map((activity) => (
             <li key={activity.id} className="flex items-start gap-3.5 p-5">
               <Avatar
                 name={activity.member}
@@ -204,23 +328,20 @@ export function DashboardView() {
                 size="md"
               />
               <div className="min-w-0 flex-1">
-                <div className="flex items-start justify-between gap-3">
-                  <p className="truncate font-semibold text-slate-900 dark:text-[#F3F4F6]">
-                    {activity.member}
-                  </p>
-                  <Badge
-                    tone={activityTone[activity.status]}
-                    className="shrink-0"
-                    dot
-                  >
-                    {activity.status}
-                  </Badge>
-                </div>
-                <p className="mt-0.5 truncate text-sm text-slate-600 dark:text-[#94A3B8]">
-                  {activity.action} &middot; {activity.book_title || activity.bookTitle}
+                <p className="font-semibold text-slate-900 dark:text-[#F3F4F6]">{activity.member}</p>
+                <p className="mt-0.5 text-xs text-slate-500 dark:text-[#94A3B8]">
+                  {activity.action === "Emprunté" ? "A emprunté" : activity.action === "Retourné" ? "A retourné" : activity.action}{" "}
+                  <span className="font-medium text-slate-700 dark:text-[#F3F4F6]">
+                    {activity.book_title || activity.bookTitle}
+                  </span>
                 </p>
-                <p className="mt-1 text-xs text-slate-400 dark:text-[#64748B]">{activity.time}</p>
+                <p className="mt-1 text-xs text-slate-400 dark:text-[#64748B]">
+                  {activity.time}
+                </p>
               </div>
+              <Badge tone={activityTone[activity.status]}>
+                {activity.status}
+              </Badge>
             </li>
           ))}
         </ul>

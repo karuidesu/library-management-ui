@@ -2,12 +2,26 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { ChevronRight, Moon, Search, Sun, X } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import {
+  ChevronRight,
+  LogOut,
+  Moon,
+  Search,
+  Settings,
+  Sun,
+  User,
+  X,
+} from "lucide-react";
 import { cn } from "@/lib/cn";
 import { APP_NAME, navItemFor } from "@/lib/nav";
-import { currentUser } from "@/lib/data";
 import { useTheme } from "@/hooks/useTheme";
+import { useAuth } from "@/hooks/useAuth";
+import {
+  DropdownItem,
+  DropdownMenu,
+  DropdownSeparator,
+} from "@/components/ui/DropdownMenu";
 import { SidebarTrigger } from "./Sidebar";
 
 function Breadcrumbs() {
@@ -123,38 +137,73 @@ function ThemeToggleShortcut() {
   );
 }
 
-function StaticUserProfile() {
+function UserProfileMenu() {
+  const router = useRouter();
+  const { user, roleName, logout } = useAuth();
+
   return (
-    <div
-      aria-label={`Session active : ${currentUser.name}, ${currentUser.role}`}
-      className="flex select-none items-center gap-3 py-1 pl-1.5 pr-2 rounded-full sm:rounded-xl transition-colors hover:bg-slate-100/60 dark:hover:bg-[#171E31]/60"
+    <DropdownMenu
+      label={`Menu utilisateur : ${user.name}`}
+      trigger={
+        <button
+          type="button"
+          aria-label={`Menu de session : ${user.name}, rôle ${roleName}`}
+          className="flex select-none items-center gap-3 py-1 pl-1.5 pr-2 rounded-full sm:rounded-xl transition-colors hover:bg-slate-100/80 dark:hover:bg-[#171E31]/80 outline-none focus-visible:ring-4 focus-visible:ring-brand-600/20"
+        >
+          <div className="relative">
+            <div
+              role="img"
+              aria-label={`Avatar de ${user.name}`}
+              className="relative flex size-10 shrink-0 select-none items-center justify-center rounded-full bg-gradient-to-tr from-brand-600 via-indigo-600 to-violet-500 text-white font-semibold text-xs tracking-wider shadow-sm ring-2 ring-white dark:ring-[#0B0F19]"
+            >
+              {user.avatar || "AD"}
+            </div>
+            {/* Indicateur de statut en ligne */}
+            <span
+              className="absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-[#0B0F19]"
+              aria-hidden="true"
+            >
+              <span className="absolute inset-0 rounded-full bg-emerald-400 animate-ping opacity-60" />
+            </span>
+          </div>
+
+          <div className="hidden min-w-0 text-left sm:block">
+            <span className="block truncate text-sm font-semibold leading-tight text-slate-900 dark:text-[#F3F4F6]">
+              {user.name}
+            </span>
+            <span className="block truncate text-xs font-medium text-slate-500 dark:text-[#94A3B8]">
+              {roleName}
+            </span>
+          </div>
+        </button>
+      }
     >
-      <div className="relative">
-        <div
-          role="img"
-          aria-label={`Avatar de ${currentUser.name}`}
-          className="relative flex size-10 shrink-0 select-none items-center justify-center rounded-full bg-gradient-to-tr from-brand-600 via-indigo-600 to-violet-500 text-white font-semibold text-xs tracking-wider shadow-sm ring-2 ring-white dark:ring-[#0B0F19]"
-        >
-          {currentUser.avatar || "SC"}
-        </div>
-        {/* Subtle active status indicator dot on bottom corner */}
-        <span
-          className="absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-[#0B0F19]"
-          aria-hidden="true"
-        >
-          <span className="absolute inset-0 rounded-full bg-emerald-400 animate-ping opacity-60" />
-        </span>
+      <div className="px-3 py-2 border-b border-slate-100 dark:border-[#212B44]">
+        <p className="truncate text-xs font-semibold text-slate-900 dark:text-[#F3F4F6]">
+          {user.name}
+        </p>
+        <p className="truncate text-[11px] text-slate-500 dark:text-[#94A3B8]">
+          {user.email || "Non renseigné"}
+        </p>
       </div>
 
-      <div className="hidden min-w-0 text-left sm:block">
-        <span className="block truncate text-sm font-semibold leading-tight text-slate-900 dark:text-[#F3F4F6]">
-          {currentUser.name}
-        </span>
-        <span className="block truncate text-xs font-medium text-slate-500 dark:text-[#94A3B8]">
-          {currentUser.role}
-        </span>
-      </div>
-    </div>
+      <DropdownItem
+        icon={Settings}
+        onSelect={() => router.push("/settings")}
+      >
+        Paramètres du compte
+      </DropdownItem>
+
+      <DropdownSeparator />
+
+      <DropdownItem
+        icon={LogOut}
+        tone="danger"
+        onSelect={logout}
+      >
+        Se déconnecter
+      </DropdownItem>
+    </DropdownMenu>
   );
 }
 
@@ -192,9 +241,8 @@ export function Header() {
           aria-hidden="true"
           className="mx-1 hidden h-8 w-px bg-slate-200 dark:bg-[#212B44] sm:block"
         />
-        <StaticUserProfile />
+        <UserProfileMenu />
       </div>
     </header>
   );
 }
-

@@ -9,9 +9,12 @@ export interface AuthUser {
   id: number | string;
   name: string;
   email: string;
-  role?: { id?: number; label?: string; name?: string } | null;
+  role?: { id?: number; label?: string; name?: string } | string | null;
   role_id?: number;
   is_active?: boolean;
+  avatar?: string;
+  gender?: "M" | "F";
+  phone?: string;
 }
 
 export interface AuthResponse {
@@ -21,7 +24,7 @@ export interface AuthResponse {
   user: AuthUser;
 }
 
-const USER_STORAGE_KEY = "agbale:user";
+export const USER_STORAGE_KEY = "agbale:user";
 
 export const authService = {
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
@@ -30,6 +33,7 @@ export const authService = {
     if (typeof window !== "undefined" && res.user) {
       try {
         localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(res.user));
+        window.dispatchEvent(new CustomEvent("agbale:auth-changed"));
       } catch {
         // Storage might be disabled
       }
@@ -47,8 +51,22 @@ export const authService = {
     }
   },
 
+  setUser(user: AuthUser) {
+    if (typeof window === "undefined") return;
+    try {
+      localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
+      window.dispatchEvent(new CustomEvent("agbale:auth-changed"));
+    } catch {
+      // Storage might be disabled
+    }
+  },
+
   async getMe(): Promise<AuthUser> {
-    return apiClient.get<AuthUser>("/users/me");
+    const user = await apiClient.get<AuthUser>("/users/me");
+    if (user) {
+      authService.setUser(user);
+    }
+    return user;
   },
 
   logout() {
@@ -56,6 +74,7 @@ export const authService = {
     if (typeof window !== "undefined") {
       try {
         localStorage.removeItem(USER_STORAGE_KEY);
+        window.dispatchEvent(new CustomEvent("agbale:auth-changed"));
       } catch {
         // Storage might be disabled
       }
